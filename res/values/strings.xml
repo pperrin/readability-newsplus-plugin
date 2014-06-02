@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <resources>
     
-    <string name="app_name">Readability</string>
+    <string name="app_name">Readability | News+</string>
         
     <!-- Extension -->
-    <string name="extension_name">Readability</string>
-    <string name="extension_description">Description for Readability</string>
+    <string name="extension_name">Readability </string>
+    <string name="extension_description">Readability | News+</string>
     <string name="extension_settings_title">Settings</string>
     <string name="extension_login_title">Login</string>
     
