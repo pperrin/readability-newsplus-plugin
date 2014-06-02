@@ -1,7 +1,7 @@
 readability-newsplus-plugin
 ===========================
 
-News+ is an android 'reader of RSS readers' that allows off line reading.
+News+ is an android 'reader of RSS readers' that allows off line reading of multiple services in a single app.
 
 It is modular to allow plugins to interface to various news/rss/read-it-later etc services.
 
@@ -11,7 +11,7 @@ Readability is a service that allows 'read it later' functionality (bookmark/sto
 easy reading - especailly on mobile devices.
 
 This plug in had been developed by others to beta, but not progressed - so I copied it here to build and use myself.
-But if others want to use it, feel free.
+But if others want to use it...
 
 My initial input is just to:-
 - Make it compilable from a single download/clone
@@ -19,3 +19,22 @@ My initial input is just to:-
 - Added a bin dir for the APK
 
 Probably a better way to do all this in GIT - but I don't know it :)
+
+News+ Google Playstore App:
+https://play.google.com/store/apps/details?id=com.noinnion.android.newsplus
+
+News+ Website:
+http://noinnion.com/newsplus/
+
+News+ Github Page:
+https://github.com/noinnion/newsplus
+
+Sherlock toolbar Github Page:
+https://github.com/JakeWharton/ActionBarSherlock
+
+Readability Standalone Google Playstore App:
+https://play.google.com/store/apps/details?id=com.readability
+
+Readability Website:
+https://www.readability.com
+
