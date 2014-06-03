@@ -73,7 +73,7 @@ public class LoginActivity extends FragmentActivity implements OnClickListener {
 				
 				
 				if (user.length() == 0 || password.length() == 0) {
-					AndroidUtils.showToast(this, getText(R.string.msg_login_fail));
+					AndroidUtils.showToast(this, getText(R.string.msg_login_fail).toString());
 				} else {
 					new SaveInputLoginTask().execute(user, password);
 				}
@@ -114,14 +114,14 @@ public class LoginActivity extends FragmentActivity implements OnClickListener {
 				} 
 				else 
 				{
-					AndroidUtils.showToast(LoginActivity.this, getText(R.string.msg_login_fail));
+					AndroidUtils.showToast(LoginActivity.this, getText(R.string.msg_login_fail).toString());
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
-				AndroidUtils.showToast(LoginActivity.this, getText(R.string.err_io) + " (" + e.getLocalizedMessage() + ")");
+				AndroidUtils.showToast(LoginActivity.this, getText(R.string.err_io).toString() + " (" + e.getLocalizedMessage() + ")");
 			} catch (ReaderException e) {
 				e.printStackTrace();
-				AndroidUtils.showToast(LoginActivity.this, getText(R.string.msg_login_fail));
+				AndroidUtils.showToast(LoginActivity.this, getText(R.string.msg_login_fail).toString());
 			}catch (Throwable e) {
 				e.printStackTrace();
 				AndroidUtils.showToast(LoginActivity.this, e.getLocalizedMessage());

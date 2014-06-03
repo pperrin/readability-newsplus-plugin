@@ -529,7 +529,8 @@ public class ReadabilityClient extends ReaderExtension {
 		CommonsHttpOAuthConsumer consumer = new CommonsHttpOAuthConsumer(Prefs.KEY, Prefs.SECRET);
 		List<BasicNameValuePair> params = Arrays.asList(new BasicNameValuePair("x_auth_username", user), new BasicNameValuePair("x_auth_password", password), new BasicNameValuePair("x_auth_mode", "client_auth"));
 		UrlEncodedFormEntity entity = null;
-		try {
+android.util.Log.v("idltd","attempt login");
+try {
 			entity = new UrlEncodedFormEntity(params, HTTP.UTF_8);
 		} catch (UnsupportedEncodingException e) {
 			throw new RuntimeException("wtf");
@@ -547,8 +548,13 @@ public class ReadabilityClient extends ReaderExtension {
 		HttpResponse response;
 		InputStream data = null;
 		try {
+			android.util.Log.v("idltd","sending login request");		
 			response = client.execute(request);
+			android.util.Log.v("idltd","executed "+response.getStatusLine());
+			if (response.getStatusLine().getStatusCode()==401) return false;
 			data = response.getEntity().getContent();
+			android.util.Log.v("idltd","data received");
+			
 		} catch (ClientProtocolException e) {
 			return false;
 		} catch (IOException e) {
