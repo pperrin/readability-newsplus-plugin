@@ -40,7 +40,7 @@ import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
  * @author Jake Wharton <jakewharton@gmail.com>
  */
 public abstract class ActionBarSherlock {
-    protected static final String TAG = "ActionBarSherlock";
+    protected static /* final */ String TAG = "ActionBarSherlock";
     public static final boolean DEBUG = false;
 
     private static final Class<?>[] CONSTRUCTOR_ARGS = new Class[] { Activity.class, int.class };
