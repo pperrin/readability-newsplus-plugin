@@ -38,3 +38,7 @@ https://play.google.com/store/apps/details?id=com.readability
 Readability Website:
 https://www.readability.com
 
+Versions
+30beta - initial version
+31beta - improved handling of readability login failure
+32beta - deletions

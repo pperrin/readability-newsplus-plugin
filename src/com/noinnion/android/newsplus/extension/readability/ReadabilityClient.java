@@ -72,7 +72,7 @@ import com.noinnion.android.reader.api.provider.ITag;
 
 public class ReadabilityClient extends ReaderExtension {
 	private String user, password;
-	public Context mContext;
+	// public Context mContext;
 	private List<String> lastItemIDList;
 	
 	public final int LOGIN_OK=200;
@@ -92,7 +92,7 @@ public class ReadabilityClient extends ReaderExtension {
 	 */
 	public ReadabilityClient(Context c) 
 	{
-		mContext = c;
+		// mContext = c;
 		user=Prefs.getUser(c);
 		password=Prefs.getPassword(c);
 	}
@@ -106,22 +106,40 @@ public class ReadabilityClient extends ReaderExtension {
 	@Override
 	public boolean editItemTag(String[] itemUids, String[] subUids, String[] tags, int action) throws IOException, ReaderException 
 	{
-		mContext=getApplicationContext();
+android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toString(ReaderExtension.ACTION_ITEM_TAG_ADD_LABEL)+" tag count=" + Integer.toString( tags.length));
+		Context mContext=getApplicationContext();
 		if(action==ReaderExtension.ACTION_ITEM_TAG_ADD_LABEL)
 		{
 			for(String tag:tags)
 			{
+				android.util.Log.v("idltd","editing tag ="+tag);
 				if(tag.equals(starredTag))
 				{
 					for(String itemBookmarkId:itemUids)
 					{
-						try {
+						android.util.Log.v("idltd","editing tag bookmark ="+itemBookmarkId);
+						
+					try {
 							doPostInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemBookmarkId+"?favorite=1", new ArrayList<NameValuePair>());
 						} catch (Exception e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
 					}
+				}
+				else { // user defined tag - note, added as comma separated string
+					for(String itemBookmarkId:itemUids)
+					{
+						android.util.Log.v("idltd","editing tag bookmark ="+itemBookmarkId);
+
+						try {
+							doPostInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemBookmarkId+"/tags/"+tag, new ArrayList<NameValuePair>());
+						} catch (Exception e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+					
 				}
 			}
 		}
@@ -201,7 +219,7 @@ public class ReadabilityClient extends ReaderExtension {
 	@Override
 	public void handleItemList(IItemListHandler itemHandler, long arg1)throws IOException, ReaderException 
 	{
-		mContext=getApplicationContext();
+		Context mContext=getApplicationContext();
 		try 
 		{
 			if(itemHandler.stream().equals(STATE_READING_LIST))
@@ -212,8 +230,12 @@ public class ReadabilityClient extends ReaderExtension {
 					Prefs.removeALLItemIDs(mContext);
 				}
 				lastItemIDList=new ArrayList<String>();
-				HttpResponse response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks");
+				HttpResponse response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks");				
 				String content=getContent(getInputStreamFromResponse(response));
+				if (response.getStatusLine().getStatusCode()!=200) {
+					android.util.Log.w("idltd","Readability API failed: "+content);
+				}
+
 				JSONObject obj=new JSONObject(content);
 				JSONArray array=obj.getJSONArray("bookmarks");
 				ArrayList<IItem>itemlist=new ArrayList<IItem>();
@@ -249,11 +271,13 @@ public class ReadabilityClient extends ReaderExtension {
 						item.title=article.getString("title");
 					if(!article.isNull("id"))
 						item.uid=bookmark.getString("id");
-					if(tags.length()>0)
+					/*if(tags.length()>0)
 					{
 						JSONObject t=tags.getJSONObject(0);
 						item.subUid=t.getString("id");
-					}
+					}*/
+					for (int j=1; j<tags.length(); j++)
+					{ item.addTag(tags.getJSONObject(j-1).getString("text")); }
 					SimpleDateFormat format=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 					if(!article.isNull("date_published"))
 					{
@@ -272,6 +296,10 @@ public class ReadabilityClient extends ReaderExtension {
 						itemlist.clear();
 						entryLength=0;
 					}
+					item.starred = bookmark.getBoolean("favorite");
+					if (item.starred) {
+						item.addTag("Favourites"); 
+					}
 					entryLength=entryLength+item.getLength();
 					itemlist.add(item);
 					lastItemIDList.add(item.uid);
@@ -288,7 +316,7 @@ public class ReadabilityClient extends ReaderExtension {
 	@Override
 	public void handleReaderList(ITagListHandler tagHandler,ISubscriptionListHandler subscriptionHandler, long arg2) throws IOException,ReaderException 
 	{
-		mContext=getApplicationContext();
+		Context mContext=getApplicationContext();
 		//tags
 		try {
 			ArrayList<ITag>tagList=new ArrayList<ITag>();
@@ -297,13 +325,14 @@ public class ReadabilityClient extends ReaderExtension {
 			tag.uid=this.starredTag;
 			tag.type=ITag.TYPE_TAG_STARRED;
 			tagList.add(tag);
-			tagHandler.tags(tagList);
+		//	tagHandler.tags(tagList);
 			
 			HttpResponse response=doGetInputStream("https://www.readability.com/api/rest/v1/tags");
 			String content=getContent(getInputStreamFromResponse(response));
 			JSONObject obj=new JSONObject(content);
 			
 			JSONArray array=(JSONArray)obj.get("tags");
+// Tags treated as 'subsciptions'...
 			ArrayList<ISubscription>sublist=new ArrayList<ISubscription>();
 			for(int i=0;i<array.length();i++)
 			{
@@ -313,14 +342,15 @@ public class ReadabilityClient extends ReaderExtension {
 				sub.title=obj.getString("text");
 				sub.uid=obj.getString("id");
 				sublist.add(sub);
-//				tag=new ITag();
-//				tag.label=obj.getString("text");
-//				tag.uid=obj.getString("id");
-//				tag.type=ITag.TYPE_TAG_LABEL;
-////				Log.e("Tag","id: "+tag.uid);
-//				tagList.add(tag);
+				tag=new ITag();
+				tag.label=obj.getString("text");
+				tag.uid=obj.getString("id");
+				tag.type=ITag.TYPE_TAG_LABEL;
+				Log.v("idltd","id: "+tag.uid+" text: "+tag.label);
+				tagList.add(tag);
 			}
-			subscriptionHandler.subscriptions(sublist);
+			tagHandler.tags(tagList); // Register Tags
+	//		subscriptionHandler.subscriptions(sublist); // Register Subs
 				
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -335,19 +365,42 @@ public class ReadabilityClient extends ReaderExtension {
 	}
 
 	@Override
-	public boolean markAsRead(String[] arg0, String[] arg1) throws IOException,ReaderException 
+	public boolean markAsRead(String[] itemUids, String[] subUids) throws IOException,ReaderException 
 	{
-		//keine implementierung in Readability vorgesehen
-		return false;
+		for (String itemUid: itemUids) {
+			try {
+				android.util.Log.v("idltd", "marking read");
+				ArrayList<NameValuePair> nvps = new ArrayList<NameValuePair>();
+				nvps.add(new BasicNameValuePair("favourite","1"));
+				nvps.add(new BasicNameValuePair("archive","1"));
+				doPostInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemUid, nvps);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				return false;
+			}
+		}
+	    return true;
 	}
 
 	@Override
 	public boolean markAsUnread(String[] itemUids, String[] subUids, boolean keepUnread)throws IOException, ReaderException 
 	{
-		//keine implementierung in Readability vorgesehen
-	    return false;
+		for (String itemUid: itemUids) {
+			try {
+				android.util.Log.v("idltd", "marking unread");			
+				ArrayList<NameValuePair> nvps = new ArrayList<NameValuePair>();
+				nvps.add(new BasicNameValuePair("archive","0"));
+				nvps.add(new BasicNameValuePair("favourite","0"));
+				doPostInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemUid, nvps);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				return false;
+			}
+		}
+	    return true;
 	}
-
 	@Override
 	public boolean renameTag(String arg0, String arg1, String arg2)throws IOException, ReaderException 
 	{
@@ -363,15 +416,15 @@ public class ReadabilityClient extends ReaderExtension {
         }
 	}
     
-	private Context getContext() {
+	/*private Context getContext() {
 		return mContext == null ? getApplicationContext() : mContext;
-	}
+	}*/
 	
 	public void loadUser()
 	{
-		if(mContext!=null&&user!=null&&password!=null)
-			return;
-		mContext=getApplicationContext();
+	//	if(mContext!=null&&user!=null&&password!=null)
+	//		return;
+		Context mContext=getApplicationContext();
 		user=Prefs.getUser(mContext);
 		password=Prefs.getPassword(mContext);
 	}
@@ -441,6 +494,7 @@ public class ReadabilityClient extends ReaderExtension {
 		HttpGet post = new HttpGet(url);
 		post.addHeader("Content-Type", "application/x-www-form-urlencoded");
 		
+		Context mContext=getApplicationContext();
 		
 		String tokenSecret=Prefs.getOAuthTokenSecret(mContext);
 		String token=Prefs.getOAuthToken(mContext);
@@ -469,6 +523,7 @@ public class ReadabilityClient extends ReaderExtension {
 		HttpPost post = new HttpPost(url);
 		post.addHeader("Content-Type", "application/x-www-form-urlencoded");
 		post.setEntity(new UrlEncodedFormEntity(params, HTTP.UTF_8));
+		Context mContext=getApplicationContext();
 		
 		
 		String tokenSecret=Prefs.getOAuthTokenSecret(mContext);
@@ -478,6 +533,8 @@ public class ReadabilityClient extends ReaderExtension {
 		mConsumer.sign(post);
 		
 		HttpResponse response = getClient().execute(post);
+		android.util.Log.v("idltd","post requst: "+url);
+		android.util.Log.v("idltd","post response: "+Integer.toString(response.getStatusLine().getStatusCode()));
 		int responseCode = response.getStatusLine().getStatusCode();
 
 		if (responseCode == 401) {
@@ -582,6 +639,8 @@ try {
 		String[]rPart=responseString.split("&");
 		String tokenSecret=rPart[0].substring(rPart[0].indexOf("=")+1);
 		String token=rPart[1].substring(rPart[1].indexOf("=")+1);
+		Context mContext=getApplicationContext();
+		
 		Prefs.setOAuth(mContext, tokenSecret, token);
 		return true;
 	}
