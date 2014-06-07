@@ -72,7 +72,7 @@ import com.noinnion.android.reader.api.provider.ITag;
 
 public class ReadabilityClient extends ReaderExtension {
 	private String user, password;
-	// public Context mContext;
+	// private Context mContext;
 	private List<String> lastItemIDList;
 	
 	public final int LOGIN_OK=200;
@@ -84,6 +84,7 @@ public class ReadabilityClient extends ReaderExtension {
 
 	public ReadabilityClient() 
 	{
+		// mContext = getApplicationContext();
 	}
 	/**
 	 * do you use this Constructer and not default
@@ -97,6 +98,12 @@ public class ReadabilityClient extends ReaderExtension {
 		password=Prefs.getPassword(c);
 	}
 
+//	public Context getMContext()
+//	{
+//		if (mContext == null) mContext = getApplicationContext();
+//		return mContext;
+//	}
+
 	@Override
 	public boolean disableTag(String arg0, String arg1) throws IOException,ReaderException 
 	{
@@ -107,7 +114,6 @@ public class ReadabilityClient extends ReaderExtension {
 	public boolean editItemTag(String[] itemUids, String[] subUids, String[] tags, int action) throws IOException, ReaderException 
 	{
 android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toString(ReaderExtension.ACTION_ITEM_TAG_ADD_LABEL)+" tag count=" + Integer.toString( tags.length));
-		Context mContext=getApplicationContext();
 		if(action==ReaderExtension.ACTION_ITEM_TAG_ADD_LABEL)
 		{
 			for(String tag:tags)
@@ -133,7 +139,9 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 						android.util.Log.v("idltd","editing tag bookmark ="+itemBookmarkId);
 
 						try {
-							doPostInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemBookmarkId+"/tags/"+tag, new ArrayList<NameValuePair>());
+							ArrayList<NameValuePair> nvps = new ArrayList<NameValuePair>();							
+							nvps.add(new BasicNameValuePair("tags",tag.toString()));
+							doPostInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemBookmarkId+"/tags", nvps);
 						} catch (Exception e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
@@ -234,6 +242,7 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 				String content=getContent(getInputStreamFromResponse(response));
 				if (response.getStatusLine().getStatusCode()!=200) {
 					android.util.Log.w("idltd","Readability API failed: "+content);
+					throw new Exception("wtf");
 				}
 
 				JSONObject obj=new JSONObject(content);
@@ -242,10 +251,10 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 				int entryLength=0;
 				for(int i=0;i<array.length();i++)
 				{
-					JSONObject bookmark=array.getJSONObject(i);//bookmark
+					JSONObject bookmark=array.getJSONObject(i);
 					String articleHref=bookmark.getString("article_href");
 					JSONArray tags=bookmark.getJSONArray("tags");
-					
+					// already got this one?
 					if(articleIds.indexOf(new Integer(bookmark.getString("id")))>-1)
 					{
 						lastItemIDList.add(bookmark.getString("id"));
@@ -276,8 +285,9 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 						JSONObject t=tags.getJSONObject(0);
 						item.subUid=t.getString("id");
 					}*/
-					for (int j=1; j<tags.length(); j++)
-					{ item.addTag(tags.getJSONObject(j-1).getString("text")); }
+					for (int j=0; j<tags.length(); j++)
+					{ item.addTag(tags.getJSONObject(j).getString("text"));
+						android.util.Log.v("idltd","adding to item:"+Integer.toString(i)+" tag: "+tags.getJSONObject(j).getString("text"));}
 					SimpleDateFormat format=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 					if(!article.isNull("date_published"))
 					{
@@ -300,6 +310,7 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 					if (item.starred) {
 						item.addTag("Favourites"); 
 					}
+					item.read = bookmark.getBoolean("archive");
 					entryLength=entryLength+item.getLength();
 					itemlist.add(item);
 					lastItemIDList.add(item.uid);
@@ -316,7 +327,6 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 	@Override
 	public void handleReaderList(ITagListHandler tagHandler,ISubscriptionListHandler subscriptionHandler, long arg2) throws IOException,ReaderException 
 	{
-		Context mContext=getApplicationContext();
 		//tags
 		try {
 			ArrayList<ITag>tagList=new ArrayList<ITag>();
@@ -325,23 +335,17 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 			tag.uid=this.starredTag;
 			tag.type=ITag.TYPE_TAG_STARRED;
 			tagList.add(tag);
-		//	tagHandler.tags(tagList);
 			
 			HttpResponse response=doGetInputStream("https://www.readability.com/api/rest/v1/tags");
 			String content=getContent(getInputStreamFromResponse(response));
 			JSONObject obj=new JSONObject(content);
 			
 			JSONArray array=(JSONArray)obj.get("tags");
-// Tags treated as 'subsciptions'...
-			ArrayList<ISubscription>sublist=new ArrayList<ISubscription>();
 			for(int i=0;i<array.length();i++)
 			{
 //				{"id": 44, "text": "new yorker", "applied_count": 3, "bookmark_ids": [1, 4, 539]}
 				obj=array.getJSONObject(i);
-				ISubscription sub=new ISubscription();
-				sub.title=obj.getString("text");
-				sub.uid=obj.getString("id");
-				sublist.add(sub);
+
 				tag=new ITag();
 				tag.label=obj.getString("text");
 				tag.uid=obj.getString("id");
@@ -350,8 +354,7 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 				tagList.add(tag);
 			}
 			tagHandler.tags(tagList); // Register Tags
-	//		subscriptionHandler.subscriptions(sublist); // Register Subs
-				
+	
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -374,6 +377,7 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 				nvps.add(new BasicNameValuePair("favourite","1"));
 				nvps.add(new BasicNameValuePair("archive","1"));
 				doPostInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemUid, nvps);
+				android.util.Log.v("idltd", "marked read");
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -393,6 +397,7 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 				nvps.add(new BasicNameValuePair("archive","0"));
 				nvps.add(new BasicNameValuePair("favourite","0"));
 				doPostInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemUid, nvps);
+				android.util.Log.v("idltd", "marked unread");
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -494,7 +499,7 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 		HttpGet post = new HttpGet(url);
 		post.addHeader("Content-Type", "application/x-www-form-urlencoded");
 		
-		Context mContext=getApplicationContext();
+		 Context mContext=getApplicationContext();
 		
 		String tokenSecret=Prefs.getOAuthTokenSecret(mContext);
 		String token=Prefs.getOAuthToken(mContext);
@@ -512,13 +517,14 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 		else if (responseCode == 400) AndroidUtils.showToast(mContext, "Bad Request: The server could not understand your request.");
 		else if (responseCode == 409) AndroidUtils.showToast(mContext, "Conflict: The resource that you are trying to create already exists.");
 		else if (responseCode == 403) AndroidUtils.showToast(mContext, "Forbidden: You are not allowed to perform the requested action.");
+		else if (responseCode != 200) AndroidUtils.showToast(mContext, "HTTP Error: "+response.getStatusLine().getReasonPhrase());
 		else return response;
 		return null;
     }
 	
 	public HttpResponse doPostInputStream(String url,List<NameValuePair>params) throws IOException, ReaderException, OAuthMessageSignerException, OAuthExpectationFailedException, OAuthCommunicationException 
 	{
-		HttpClient client = new DefaultHttpClient();
+		// HttpClient client = new DefaultHttpClient();
 
 		HttpPost post = new HttpPost(url);
 		post.addHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -531,9 +537,16 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 		OAuthConsumer mConsumer = new CommonsHttpOAuthConsumer(Prefs.KEY, Prefs.SECRET);
 		mConsumer.setTokenWithSecret(token, tokenSecret);
 		mConsumer.sign(post);
-		
-		HttpResponse response = getClient().execute(post);
+	
 		android.util.Log.v("idltd","post requst: "+url);
+		HttpResponse response  = null;
+		try {
+		response = getClient().execute(post);
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
 		android.util.Log.v("idltd","post response: "+Integer.toString(response.getStatusLine().getStatusCode()));
 		int responseCode = response.getStatusLine().getStatusCode();
 
@@ -544,6 +557,7 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 		else if (responseCode == 400) AndroidUtils.showToast(mContext, "Bad Request: The server could not understand your request.");
 		else if (responseCode == 409) AndroidUtils.showToast(mContext, "Conflict: The resource that you are trying to create already exists.");
 		else if (responseCode == 403) AndroidUtils.showToast(mContext, "Forbidden: You are not allowed to perform the requested action.");
+		else if (responseCode != 200) AndroidUtils.showToast(mContext, "HTTP Error: "+response.getStatusLine().getReasonPhrase());
 		else return response;
 		return null;
 	}
@@ -639,7 +653,7 @@ try {
 		String[]rPart=responseString.split("&");
 		String tokenSecret=rPart[0].substring(rPart[0].indexOf("=")+1);
 		String token=rPart[1].substring(rPart[1].indexOf("=")+1);
-		Context mContext=getApplicationContext();
+		 Context mContext=getApplicationContext();
 		
 		Prefs.setOAuth(mContext, tokenSecret, token);
 		return true;
