@@ -71,12 +71,12 @@ import com.noinnion.android.reader.api.provider.ISubscription;
 import com.noinnion.android.reader.api.provider.ITag;
 
 public class ReadabilityClient extends ReaderExtension {
-	private String user, password;
-	// private Context mContext;
+	private Context mContext;
 	private List<String> lastItemIDList;
+	private ArrayList<ITag> tagList; 	
 	
 	public final int LOGIN_OK=200;
-	private static final String starredTag="Tag/starred";
+	private static final String starredTag= "666"; // "Tag/starred";
 	
 	protected DefaultHttpClient client;
 
@@ -93,16 +93,14 @@ public class ReadabilityClient extends ReaderExtension {
 	 */
 	public ReadabilityClient(Context c) 
 	{
-		// mContext = c;
-		user=Prefs.getUser(c);
-		password=Prefs.getPassword(c);
+		mContext = c;
 	}
 
-//	public Context getMContext()
-//	{
-//		if (mContext == null) mContext = getApplicationContext();
-//		return mContext;
-//	}
+	public Context getMContext()
+	{
+		if (mContext == null) mContext = getApplicationContext();
+		return mContext;
+	}
 
 	@Override
 	public boolean disableTag(String arg0, String arg1) throws IOException,ReaderException 
@@ -115,28 +113,20 @@ public class ReadabilityClient extends ReaderExtension {
 	{
 android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toString(ReaderExtension.ACTION_ITEM_TAG_ADD_LABEL)+" tag count=" + Integer.toString( tags.length));
 		if(action==ReaderExtension.ACTION_ITEM_TAG_ADD_LABEL)
-		{
-			for(String tag:tags)
-			{
-				android.util.Log.v("idltd","editing tag ="+tag);
+		{	for(String tag:tags)
+			{	android.util.Log.v("idltd","editing tag ="+tag);
 				if(tag.equals(starredTag))
-				{
-					for(String itemBookmarkId:itemUids)
-					{
-						android.util.Log.v("idltd","editing tag bookmark ="+itemBookmarkId);
-						
-					try {
-							doPostInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemBookmarkId+"?favorite=1", new ArrayList<NameValuePair>());
-						} catch (Exception e) {
+				{	for(String itemBookmarkId:itemUids)
+					{	android.util.Log.v("idltd","editing tag bookmark ="+itemBookmarkId);
+					try
+					{	doPostInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemBookmarkId+"?favorite=1", new ArrayList<NameValuePair>());
+					} catch (Exception e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
-						}
-					}
-				}
+				}	}	}
 				else { // user defined tag - note, added as comma separated string
 					for(String itemBookmarkId:itemUids)
-					{
-						android.util.Log.v("idltd","editing tag bookmark ="+itemBookmarkId);
+					{ android.util.Log.v("idltd","editing tag bookmark ="+itemBookmarkId);
 
 						try {
 							ArrayList<NameValuePair> nvps = new ArrayList<NameValuePair>();							
@@ -145,122 +135,70 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 						} catch (Exception e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
-						}
-					}
-					
-				}
-			}
-		}
+		}	}	}	}	}
 		if(action==ReaderExtension.ACTION_ITEM_TAG_REMOVE_LABEL)
-		{
-			for(String tag:tags)
-			{
-				if(tag.equals(starredTag))
-				{
-					for(String itemBookmarkId:itemUids)
-					{
-						try {
-							doPostInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemBookmarkId+"?favorite=0", new ArrayList<NameValuePair>());
-						} catch (Exception e) {
-							// TODO Auto-generated catch block
+		{	for(String tag:tags)
+			{	if(tag.equals(starredTag))
+				{	for(String itemBookmarkId:itemUids)
+					{	try
+						{	doPostInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemBookmarkId+"?favorite=0", new ArrayList<NameValuePair>());
+						} catch (Exception e)
+						{	// TODO Auto-generated catch block
 							e.printStackTrace();
-						}
-						
-					}
-				}
-			}
-		}
+		}	}	}	}	}
 		return false;
 	}
 
 	@Override
 	public boolean editSubscription(String uid, String title, String url, String[] tags, int action) throws IOException, ReaderException 
-	{
-//		Log.e("EditSubscription",title);
-		loadUser();
-		
-        switch (action) {
-        case ReaderExtension.ACTION_SUBSCRIPTION_EDIT:
-                // no api
-                Log.w("Test", "editSubscription: ACTION_EDIT : no api");
-                break;
-        case ReaderExtension.ACTION_SUBSCRIPTION_NEW_LABEL:
-                break;
-        case ReaderExtension.ACTION_SUBSCRIPTION_ADD_LABEL:
-                // no api
-                Log.w("Test", "editSubscription: ACTION_ADD_LABEL : no api");
-
-                break;
-        case ReaderExtension.ACTION_SUBSCRIPTION_REMOVE_LABEL:
-                // no api
-                Log.w("Test", "editSubscription: ACTION_REMOVE_LABEL : no api");
-                break;
-        case ReaderExtension.ACTION_SUBSCRIPTION_SUBCRIBE:
-                break;
-        case ReaderExtension.ACTION_SUBSCRIPTION_UNSUBCRIBE:
- 
-                break;
+	{	switch (action) {
+        case ReaderExtension.ACTION_SUBSCRIPTION_EDIT: break;
+        case ReaderExtension.ACTION_SUBSCRIPTION_NEW_LABEL: break;
+        case ReaderExtension.ACTION_SUBSCRIPTION_ADD_LABEL: break;
+        case ReaderExtension.ACTION_SUBSCRIPTION_REMOVE_LABEL: break;
+        case ReaderExtension.ACTION_SUBSCRIPTION_SUBCRIBE: break;
+        case ReaderExtension.ACTION_SUBSCRIPTION_UNSUBCRIBE: break;
         }
-
         return false;
 	}
-
 	
 	@Override
 	public void handleItemIdList(IItemIdListHandler itemHandler, long arg1)throws IOException, ReaderException
-	{
-		loadUser();
-		List<String>idList=new ArrayList<String>();
-		
-		for(String id:lastItemIDList)
-		{
-			idList.add(id+"");
-		}
-		try {
-			itemHandler.items(idList);
-		} catch (RemoteException e) {
-			e.printStackTrace();
-		}
-		
+	{	List<String>idList=new ArrayList<String>();
+		for(String id:lastItemIDList) {	idList.add(id+""); }
+		try
+		{	itemHandler.items(idList); }
+		catch (RemoteException e)
+		{	e.printStackTrace(); }
 	}
 	
 	@Override
 	public void handleItemList(IItemListHandler itemHandler, long arg1)throws IOException, ReaderException 
-	{
-		Context mContext=getApplicationContext();
-		try 
-		{
-			if(itemHandler.stream().equals(STATE_READING_LIST))
-			{		
-				List<Integer>articleIds=Prefs.getAllItemIDs(mContext);
-				if(itemHandler.startTime()==0)
-				{
-					Prefs.removeALLItemIDs(mContext);
-				}
+	{	try
+		{	if(itemHandler.stream().equals(STATE_READING_LIST))
+			{	List<Integer>articleIds=Prefs.getAllItemIDs(getMContext());
+				if(itemHandler.startTime()==0) Prefs.removeALLItemIDs(getMContext());
 				lastItemIDList=new ArrayList<String>();
 				HttpResponse response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks");				
 				String content=getContent(getInputStreamFromResponse(response));
-				if (response.getStatusLine().getStatusCode()!=200) {
-					android.util.Log.w("idltd","Readability API failed: "+content);
+				if (response.getStatusLine().getStatusCode()!=200)
+				{	android.util.Log.w("idltd","Readability API failed: "+content);
 					throw new Exception("wtf");
 				}
-
 				JSONObject obj=new JSONObject(content);
 				JSONArray array=obj.getJSONArray("bookmarks");
 				ArrayList<IItem>itemlist=new ArrayList<IItem>();
 				int entryLength=0;
 				for(int i=0;i<array.length();i++)
-				{
-					JSONObject bookmark=array.getJSONObject(i);
+				{	JSONObject bookmark=array.getJSONObject(i);
 					String articleHref=bookmark.getString("article_href");
 					JSONArray tags=bookmark.getJSONArray("tags");
 					// already got this one?
-					if(articleIds.indexOf(new Integer(bookmark.getString("id")))>-1)
-					{
-						lastItemIDList.add(bookmark.getString("id"));
+					if(articleIds.indexOf(Integer.valueOf(bookmark.getString("id")))>-1)
+					{	lastItemIDList.add(bookmark.getString("id"));
 						continue;
 					}
-					Prefs.addItemID(mContext, bookmark.getInt("id"));
+					Prefs.addItemID(getMContext(), bookmark.getInt("id"));
 					response=doGetInputStream("https://www.readability.com"+articleHref);
 					content=getContent(getInputStreamFromResponse(response));
 					JSONObject article=null;
@@ -268,71 +206,59 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 					IItem item=new IItem();
 					if(!article.isNull("author"))
 						item.author=article.getString("author");
-					if(!article.isNull("content"))
-						item.content=article.getString("content");
-					else
-						item.content="";
-					if(!article.isNull("url"))
-						item.link=article.getString("url");
-					if(!article.isNull("lead_image_url"))
-						item.image=article.getString("lead_image_url");
-					if(!article.isNull("title"))
-						item.title=article.getString("title");
-					if(!article.isNull("id"))
-						item.uid=bookmark.getString("id");
+					if(!article.isNull("content")) item.content=article.getString("content");
+					else item.content="";
+					if(!article.isNull("url")) item.link=article.getString("url");
+					if(!article.isNull("lead_image_url")) item.image=article.getString("lead_image_url");
+					if(!article.isNull("title")) item.title=article.getString("title");
+					if(!article.isNull("id")) item.uid=bookmark.getString("id");
 					/*if(tags.length()>0)
 					{
 						JSONObject t=tags.getJSONObject(0);
 						item.subUid=t.getString("id");
 					}*/
 					for (int j=0; j<tags.length(); j++)
-					{ item.addTag(tags.getJSONObject(j).getString("text"));
-						android.util.Log.v("idltd","adding to item:"+Integer.toString(i)+" tag: "+tags.getJSONObject(j).getString("text"));}
-					SimpleDateFormat format=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-					if(!article.isNull("date_published"))
-					{
-						item.publishedTime=format.parse(article.getString("date_published")).getTime();
+					{	item.addTag(tags.getJSONObject(j).getString("id"));
+						android.util.Log.v("idltd","adding to item:"+Integer.toString(i)+" tag: "+tags.getJSONObject(j).getString("text"));
 					}
-					if(!bookmark.isNull("date_added"))
-						item.updatedTime=format.parse(bookmark.getString("date_added")).getTime()/1000;
-					else
-						item.updatedTime=item.publishedTime/1000;
+					SimpleDateFormat format=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+					if(!article.isNull("date_published")) item.publishedTime=format.parse(article.getString("date_published")).getTime();
+					if(!bookmark.isNull("date_added")) item.updatedTime=format.parse(bookmark.getString("date_added")).getTime()/1000;
+					else item.updatedTime=item.publishedTime/1000;
 					if((entryLength+item.getLength())>MAX_TRANSACTION_LENGTH)
-					{
-						try{itemHandler.items(itemlist, item.getLength());}catch(Exception e)
-						{
-							Log.e("Readability.handleItem",e.toString()+" :  TransactionLength: "+entryLength);
-						}
+					{	try {	itemHandler.items(itemlist, item.getLength()); }
+						catch(Exception e) { Log.e("Readability.handleItem",e.toString()+" :  TransactionLength: "+entryLength); }
 						itemlist.clear();
 						entryLength=0;
 					}
 					item.starred = bookmark.getBoolean("favorite");
-					if (item.starred) {
-						item.addTag("Favourites"); 
-					}
+					if (item.starred) item.addTag(ReadabilityClient.starredTag); 
+					if (item.starred) item.addTag("Favourites"); 
 					item.read = bookmark.getBoolean("archive");
+					trace("item: "+item.uid.toString()+" read: "+ (item.read ? "true":"false"));
 					entryLength=entryLength+item.getLength();
 					itemlist.add(item);
 					lastItemIDList.add(item.uid);
 				}
 				itemHandler.items(itemlist, entryLength);
-			} 
-		}
+		}	}
 		catch (Exception e)
 		{
 			e.printStackTrace();
-		}
-	}
+	}	}
 
+	private void trace(String message)
+	{	android.util.Log.v("idltd",message); }
+	
 	@Override
 	public void handleReaderList(ITagListHandler tagHandler,ISubscriptionListHandler subscriptionHandler, long arg2) throws IOException,ReaderException 
 	{
 		//tags
 		try {
-			ArrayList<ITag>tagList=new ArrayList<ITag>();
+			tagList=new ArrayList<ITag>();
 			ITag tag=new ITag();
 			tag.label="Favorites";
-			tag.uid=this.starredTag;
+			tag.uid=ReadabilityClient.starredTag;
 			tag.type=ITag.TYPE_TAG_STARRED;
 			tagList.add(tag);
 			
@@ -345,7 +271,6 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 			{
 //				{"id": 44, "text": "new yorker", "applied_count": 3, "bookmark_ids": [1, 4, 539]}
 				obj=array.getJSONObject(i);
-
 				tag=new ITag();
 				tag.label=obj.getString("text");
 				tag.uid=obj.getString("id");
@@ -372,12 +297,12 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 	{
 		for (String itemUid: itemUids) {
 			try {
-				android.util.Log.v("idltd", "marking read");
+				trace("marking read");
 				ArrayList<NameValuePair> nvps = new ArrayList<NameValuePair>();
-				nvps.add(new BasicNameValuePair("favourite","1"));
-				nvps.add(new BasicNameValuePair("archive","1"));
+				nvps.add(new BasicNameValuePair("favourite","true"));
+				nvps.add(new BasicNameValuePair("archive","true"));
 				doPostInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemUid, nvps);
-				android.util.Log.v("idltd", "marked read");
+				trace("marked read");
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -392,12 +317,12 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 	{
 		for (String itemUid: itemUids) {
 			try {
-				android.util.Log.v("idltd", "marking unread");			
+				trace("marking unread");			
 				ArrayList<NameValuePair> nvps = new ArrayList<NameValuePair>();
-				nvps.add(new BasicNameValuePair("archive","0"));
-				nvps.add(new BasicNameValuePair("favourite","0"));
+				nvps.add(new BasicNameValuePair("archive","false"));
+				nvps.add(new BasicNameValuePair("favourite","false"));
 				doPostInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemUid, nvps);
-				android.util.Log.v("idltd", "marked unread");
+				trace("marked unread");
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -420,21 +345,6 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
                 throw new ReaderException(error);
         }
 	}
-    
-	/*private Context getContext() {
-		return mContext == null ? getApplicationContext() : mContext;
-	}*/
-	
-	public void loadUser()
-	{
-	//	if(mContext!=null&&user!=null&&password!=null)
-	//		return;
-		Context mContext=getApplicationContext();
-		user=Prefs.getUser(mContext);
-		password=Prefs.getPassword(mContext);
-	}
-
-	
 
 	public DefaultHttpClient getClient() {
 		if (client == null)
@@ -497,29 +407,16 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
     public HttpResponse doGetInputStream(String url) throws ClientProtocolException, IOException, ReaderException, OAuthMessageSignerException, OAuthExpectationFailedException, OAuthCommunicationException
     {
 		HttpGet post = new HttpGet(url);
-		post.addHeader("Content-Type", "application/x-www-form-urlencoded");
-		
-		 Context mContext=getApplicationContext();
-		
-		String tokenSecret=Prefs.getOAuthTokenSecret(mContext);
-		String token=Prefs.getOAuthToken(mContext);
+		post.addHeader("Content-Type", "application/x-www-form-urlencoded");		
+		String tokenSecret=Prefs.getOAuthTokenSecret(getMContext());
+		String token=Prefs.getOAuthToken(getMContext());
 		OAuthConsumer mConsumer = new CommonsHttpOAuthConsumer(Prefs.KEY, Prefs.SECRET);
 		mConsumer.setTokenWithSecret(token, tokenSecret);
 		mConsumer.sign(post);
 		
 		HttpResponse response = getClient().execute(post);
-		int responseCode = response.getStatusLine().getStatusCode();
 
-		if (responseCode == 401) {
-			AndroidUtils.showToast(mContext, "Authorization Required: Authentication failed or was not provided.");
-		} else if (responseCode == 404) AndroidUtils.showToast(mContext, "Not Found: The resource that you requested does not exist.");
-		else if (responseCode == 500) AndroidUtils.showToast(mContext, "Internal Server Error: An unknown error has occurred.");
-		else if (responseCode == 400) AndroidUtils.showToast(mContext, "Bad Request: The server could not understand your request.");
-		else if (responseCode == 409) AndroidUtils.showToast(mContext, "Conflict: The resource that you are trying to create already exists.");
-		else if (responseCode == 403) AndroidUtils.showToast(mContext, "Forbidden: You are not allowed to perform the requested action.");
-		else if (responseCode != 200) AndroidUtils.showToast(mContext, "HTTP Error: "+response.getStatusLine().getReasonPhrase());
-		else return response;
-		return null;
+		return toastCode(response);
     }
 	
 	public HttpResponse doPostInputStream(String url,List<NameValuePair>params) throws IOException, ReaderException, OAuthMessageSignerException, OAuthExpectationFailedException, OAuthCommunicationException 
@@ -528,59 +425,50 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 
 		HttpPost post = new HttpPost(url);
 		post.addHeader("Content-Type", "application/x-www-form-urlencoded");
-		post.setEntity(new UrlEncodedFormEntity(params, HTTP.UTF_8));
-		Context mContext=getApplicationContext();
+		post.setEntity(new UrlEncodedFormEntity(params, HTTP.UTF_8));		
 		
-		
-		String tokenSecret=Prefs.getOAuthTokenSecret(mContext);
-		String token=Prefs.getOAuthToken(mContext);
+		String tokenSecret=Prefs.getOAuthTokenSecret(getMContext());
+		String token=Prefs.getOAuthToken(getMContext());
 		OAuthConsumer mConsumer = new CommonsHttpOAuthConsumer(Prefs.KEY, Prefs.SECRET);
 		mConsumer.setTokenWithSecret(token, tokenSecret);
 		mConsumer.sign(post);
 	
 		android.util.Log.v("idltd","post requst: "+url);
-		HttpResponse response  = null;
-		try {
-		response = getClient().execute(post);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
-		android.util.Log.v("idltd","post response: "+Integer.toString(response.getStatusLine().getStatusCode()));
-		int responseCode = response.getStatusLine().getStatusCode();
 
-		if (responseCode == 401) {
-			AndroidUtils.showToast(mContext, "Authorization Required: Authentication failed or was not provided.");
-		} else if (responseCode == 404) AndroidUtils.showToast(mContext, "Not Found: The resource that you requested does not exist.");
-		else if (responseCode == 500) AndroidUtils.showToast(mContext, "Internal Server Error: An unknown error has occurred.");
-		else if (responseCode == 400) AndroidUtils.showToast(mContext, "Bad Request: The server could not understand your request.");
-		else if (responseCode == 409) AndroidUtils.showToast(mContext, "Conflict: The resource that you are trying to create already exists.");
-		else if (responseCode == 403) AndroidUtils.showToast(mContext, "Forbidden: You are not allowed to perform the requested action.");
-		else if (responseCode != 200) AndroidUtils.showToast(mContext, "HTTP Error: "+response.getStatusLine().getReasonPhrase());
-		else return response;
+		HttpResponse response  = null;	
+		try { response = getClient().execute(post); }
+		catch (Exception e) { e.printStackTrace(); }
+		return toastCode(response);
+	}
+
+
+	private HttpResponse toastCode( HttpResponse response)
+	{	Integer responseCode = response.getStatusLine().getStatusCode();
+		if (responseCode==200) return response;
+		if (responseCode == 401) AndroidUtils.showToast(getMContext(), "Authorization Required: Authentication failed or was not provided.");
+		else if (responseCode == 404) AndroidUtils.showToast(getMContext(), "Not Found: The resource that you requested does not exist.");
+		else if (responseCode == 500) AndroidUtils.showToast(getMContext(), "Internal Server Error: An unknown error has occurred.");
+		else if (responseCode == 400) AndroidUtils.showToast(getMContext(), "Bad Request: The server could not understand your request.");
+		else if (responseCode == 409) AndroidUtils.showToast(getMContext(), "Conflict: The resource that you are trying to create already exists.");
+		else if (responseCode == 403) AndroidUtils.showToast(getMContext(), "Forbidden: You are not allowed to perform the requested action.");
+		else AndroidUtils.showToast(getMContext(), "HTTP Error: "+response.getStatusLine().getReasonPhrase());
 		return null;
 	}
 	
 	public InputStream getInputStreamFromResponse(HttpResponse response) throws ReaderException, IllegalStateException, IOException
-	{
-		final HttpEntity entity = response.getEntity();
-		if (entity == null) {
-			throw new ReaderException("null response entity");
-		}
-		InputStream is = null;
+	{	final HttpEntity entity = response.getEntity();
+		if (entity == null) { throw new ReaderException("null response entity"); }
 
+		InputStream is = null;
 		// create the appropriate stream wrapper based on the encoding type
 		String encoding = HttpUtils.getHeaderValue(entity.getContentEncoding());
-		if (encoding != null && encoding.equalsIgnoreCase("gzip")) {
-			is = new GZIPInputStream(entity.getContent());
-		} else if (encoding != null && encoding.equalsIgnoreCase("deflate")) {
-			is = new InflaterInputStream(entity.getContent(),
-					new Inflater(true));
-		} else {
-			is = entity.getContent();
+		if (encoding != null && encoding.equalsIgnoreCase("gzip")) { is = new GZIPInputStream(entity.getContent()); }
+		else if (encoding != null && encoding.equalsIgnoreCase("deflate"))
+		{	is = new InflaterInputStream(entity.getContent(),
+			new Inflater(true));
 		}
-
+		else is = entity.getContent();
+		
 		return new FilterInputStream(is) {
 			@Override
 			public void close() throws IOException {
@@ -590,11 +478,8 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 		};
 	}
 
-	public boolean login(String user, String password) throws IOException,ReaderException, JSONException {
+	public boolean login(String user, String password, Context mContext) throws IOException,ReaderException, JSONException {
 		
-		this.user = user;
-		this.password = password;		
-
 		HttpClient client = new DefaultHttpClient();
 		HttpPost request = new HttpPost(Prefs.AUTHORIZE_URL);
 		CommonsHttpOAuthConsumer consumer = new CommonsHttpOAuthConsumer(Prefs.KEY, Prefs.SECRET);
@@ -607,15 +492,11 @@ try {
 			throw new RuntimeException("wtf");
 		}
 		request.setEntity(entity);
-		try {
-			consumer.sign(request);
-		} catch (OAuthMessageSignerException e) {
-			return false;
-		} catch (OAuthExpectationFailedException e) {
-			return false;
-		} catch (OAuthCommunicationException e) {
-			return false;
-		}
+		try { consumer.sign(request);}
+		catch (OAuthMessageSignerException e) { return false; }
+		catch (OAuthExpectationFailedException e) { return false; }
+		catch (OAuthCommunicationException e) { return false; }
+
 		HttpResponse response;
 		InputStream data = null;
 		try {
@@ -638,11 +519,8 @@ try {
 			StringBuilder out = new StringBuilder();
 			Reader in = new InputStreamReader(data, HTTP.UTF_8);
 			int read;
-			do {
-				read = in.read(buffer, 0, buffer.length);
-				if (read > 0) {
-					out.append(buffer, 0, read);
-				}
+			do {	read = in.read(buffer, 0, buffer.length);
+					if (read > 0) out.append(buffer, 0, read);
 			} while (read >= 0);
 			in.close();
 			responseString = out.toString();
@@ -652,10 +530,8 @@ try {
 		}
 		String[]rPart=responseString.split("&");
 		String tokenSecret=rPart[0].substring(rPart[0].indexOf("=")+1);
-		String token=rPart[1].substring(rPart[1].indexOf("=")+1);
-		 Context mContext=getApplicationContext();
-		
-		Prefs.setOAuth(mContext, tokenSecret, token);
+		String token=rPart[1].substring(rPart[1].indexOf("=")+1);		
+		Prefs.setOAuth(getMContext(), tokenSecret, token);
 		return true;
 	}
 
