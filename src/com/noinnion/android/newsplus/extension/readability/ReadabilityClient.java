@@ -97,6 +97,8 @@ public class ReadabilityClient extends ReaderExtension {
 		mContext = c;
 	}
 
+	
+
 	public Context getMContext()
 	{
 		if (mContext == null) mContext = getApplicationContext();
@@ -524,7 +526,7 @@ public class ReadabilityClient extends ReaderExtension {
 				super.close();
 				entity.consumeContent();
 			}
-		};
+		}
 	}
 
 	public boolean login(String user, String password, Context mContext) throws IOException,ReaderException, JSONException {
