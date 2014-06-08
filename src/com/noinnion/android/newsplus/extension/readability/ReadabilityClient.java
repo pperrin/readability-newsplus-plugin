@@ -177,15 +177,16 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 	{	String content="";
 		try
 		{
-		trace("Item Handler: "+itemHandler.stream().toString());
-		if (itemHandler.stream().equals(STATE_READING_LIST))
-			{	HttpResponse response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks");				
-				content = getContent(getInputStreamFromResponse(response));
-				if (response.getStatusLine().getStatusCode() != 200)
-				{	android.util.Log.w("idltd", "Readability API failed: " + content);
-					 throw new Exception("wtf");
-				}	}
-		}
+			trace("Item Handler: "+itemHandler.stream().toString());
+			HttpResponse response=null;
+			if (itemHandler.stream().equals(STATE_READING_LIST)) response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks?archive=0"); 				
+			if (itemHandler.stream().equals(STATE_STARRED)) response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks?favourite=1");
+			// if (itemHandler.stream().equals(STATE_READ)) response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks?archive=1");
+			content = getContent(getInputStreamFromResponse(response));
+			if (response.getStatusLine().getStatusCode() != 200)
+			{	android.util.Log.w("idltd", "Readability API failed: " + content);
+				 throw new Exception("wtf");
+		}	}
 		catch (Exception e)
 		{}
 		
