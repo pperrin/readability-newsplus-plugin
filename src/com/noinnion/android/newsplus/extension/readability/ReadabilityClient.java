@@ -31,6 +31,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.params.HttpClientParams;
 import org.apache.http.conn.ClientConnectionManager;
@@ -111,23 +112,25 @@ public class ReadabilityClient extends ReaderExtension {
 	@Override
 	public boolean editItemTag(String[] itemUids, String[] subUids, String[] tags, int action) throws IOException, ReaderException 
 	{
-android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toString(ReaderExtension.ACTION_ITEM_TAG_ADD_LABEL)+" tag count=" + Integer.toString( tags.length));
+		android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toString(ReaderExtension.ACTION_ITEM_TAG_ADD_LABEL)+" tag count=" + Integer.toString( tags.length));
 		if(action==ReaderExtension.ACTION_ITEM_TAG_ADD_LABEL)
 		{	for(String tag:tags)
 			{	android.util.Log.v("idltd","editing tag ="+tag);
 				if(tag.equals(starredTag))
-				{	for(String itemBookmarkId:itemUids)
+				{	BasicNameValuePair nvp=new BasicNameValuePair("favorite","1");
+					ArrayList<NameValuePair> nvps =new ArrayList<NameValuePair>();
+					nvps.add(nvp);			
+					for(String itemBookmarkId:itemUids)
 					{	android.util.Log.v("idltd","editing tag bookmark ="+itemBookmarkId);
-					try
-					{	doPostInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemBookmarkId+"?favorite=1", new ArrayList<NameValuePair>());
-					} catch (Exception e) {
+						try
+						{	doPostInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemBookmarkId, nvps);
+						} catch (Exception e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
 				}	}	}
 				else { // user defined tag - note, added as comma separated string
 					for(String itemBookmarkId:itemUids)
 					{ android.util.Log.v("idltd","editing tag bookmark ="+itemBookmarkId);
-
 						try {
 							ArrayList<NameValuePair> nvps = new ArrayList<NameValuePair>();							
 							nvps.add(new BasicNameValuePair("tags",tag.toString()));
@@ -139,13 +142,30 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 		if(action==ReaderExtension.ACTION_ITEM_TAG_REMOVE_LABEL)
 		{	for(String tag:tags)
 			{	if(tag.equals(starredTag))
-				{	for(String itemBookmarkId:itemUids)
+				{	BasicNameValuePair nvp=new BasicNameValuePair("favorite","0");
+					ArrayList<NameValuePair> nvps =new ArrayList<NameValuePair>();
+					nvps.add(nvp);			
+					for(String itemBookmarkId:itemUids)
 					{	try
-						{	doPostInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemBookmarkId+"?favorite=0", new ArrayList<NameValuePair>());
+						{	doPostInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemBookmarkId, nvps);
 						} catch (Exception e)
 						{	// TODO Auto-generated catch block
 							e.printStackTrace();
-		}	}	}	}	}
+				}	}	}
+				else
+				{	for(String itemBookmarkId:itemUids)
+					{	try
+						{
+							doDeleteInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemBookmarkId+"/tags/"+itemBookmarkId);
+						} catch (Exception e)
+						{	// TODO Auto-generated catch block
+							e.printStackTrace();
+						}	}	}
+					
+					
+					
+				}
+			}	}
 		return false;
 	}
 
@@ -180,7 +200,7 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 			trace("Item Handler: "+itemHandler.stream().toString());
 			HttpResponse response=null;
 			if (itemHandler.stream().equals(STATE_READING_LIST)) response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks?archive=0"); 				
-			if (itemHandler.stream().equals(STATE_STARRED)) response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks?favourite=1");
+			if (itemHandler.stream().equals(STATE_STARRED)) response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks?favorite=1");
 			// if (itemHandler.stream().equals(STATE_READ)) response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks?archive=1");
 			content = getContent(getInputStreamFromResponse(response));
 			if (response.getStatusLine().getStatusCode() != 200)
@@ -225,11 +245,7 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 					if(!article.isNull("lead_image_url")) item.image=article.getString("lead_image_url");
 					if(!article.isNull("title")) item.title=article.getString("title");
 					if(!article.isNull("id")) item.uid=bookmark.getString("id");
-					/*if(tags.length()>0)
-					{
-						JSONObject t=tags.getJSONObject(0);
-						item.subUid=t.getString("id");
-					}*/
+					
 					for (int j=0; j<tags.length(); j++)
 					{
 						item.addTag(tags.getJSONObject(j).getString("id"));
@@ -247,7 +263,7 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 					}
 					item.starred = bookmark.getBoolean("favorite");
 					if (item.starred) item.addTag(ReadabilityClient.starredTag);
-					// if (item.starred) item.addTag("Favourites");
+				   // if (item.starred) item.addTag("Favourites");
 					item.read = bookmark.getBoolean("archive");
 					trace("item: "+item.uid.toString()+" read: "+ (item.read ? "true":"false"));
 					trace("item: "+item.uid.toString()+" starred: "+ (item.starred ? "true":"false"));
@@ -312,8 +328,7 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 			try {
 				trace("marking read");
 				ArrayList<NameValuePair> nvps = new ArrayList<NameValuePair>();
-				nvps.add(new BasicNameValuePair("favourite","true"));
-				nvps.add(new BasicNameValuePair("archive","true"));
+				nvps.add(new BasicNameValuePair("archive","1"));			
 				doPostInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemUid, nvps);
 				trace("marked read");
 			} catch (Exception e) {
@@ -332,8 +347,7 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 			try {
 				trace("marking unread");			
 				ArrayList<NameValuePair> nvps = new ArrayList<NameValuePair>();
-				nvps.add(new BasicNameValuePair("archive","false"));
-				nvps.add(new BasicNameValuePair("favourite","false"));
+				nvps.add(new BasicNameValuePair("archive","0"));
 				doPostInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemUid, nvps);
 				trace("marked unread");
 			} catch (Exception e) {
@@ -437,6 +451,7 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 		// HttpClient client = new DefaultHttpClient();
 
 		HttpPost post = new HttpPost(url);
+		
 		post.addHeader("Content-Type", "application/x-www-form-urlencoded");
 		post.setEntity(new UrlEncodedFormEntity(params, HTTP.UTF_8));		
 		
@@ -453,11 +468,32 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 		catch (Exception e) { e.printStackTrace(); }
 		return toastCode(response);
 	}
+	public HttpResponse doDeleteInputStream(String url) throws IOException, ReaderException, OAuthMessageSignerException, OAuthExpectationFailedException, OAuthCommunicationException 
+	{
+		// HttpClient client = new DefaultHttpClient();
 
+		HttpDelete post = new HttpDelete(url);
+
+		//post.addHeader("Content-Type", "application/x-www-form-urlencoded");
+		//post.set setEntity(new UrlEncodedFormEntity(params, HTTP.UTF_8));		
+
+		String tokenSecret=Prefs.getOAuthTokenSecret(getMContext());
+		String token=Prefs.getOAuthToken(getMContext());
+		OAuthConsumer mConsumer = new CommonsHttpOAuthConsumer(Prefs.KEY, Prefs.SECRET);
+		mConsumer.setTokenWithSecret(token, tokenSecret);
+		mConsumer.sign(post);
+
+		android.util.Log.v("idltd","post requst: "+url);
+
+		HttpResponse response  = null;	
+		try { response = getClient().execute(post); }
+		catch (Exception e) { e.printStackTrace(); }
+		return toastCode(response);
+	}
 
 	private HttpResponse toastCode( HttpResponse response)
 	{	Integer responseCode = response.getStatusLine().getStatusCode();
-		if (responseCode==200) return response;
+		if (responseCode==200 || responseCode==202) return response;
 		if (responseCode == 401) AndroidUtils.showToast(getMContext(), "Authorization Required: Authentication failed or was not provided.");
 		else if (responseCode == 404) AndroidUtils.showToast(getMContext(), "Not Found: The resource that you requested does not exist.");
 		else if (responseCode == 500) AndroidUtils.showToast(getMContext(), "Internal Server Error: An unknown error has occurred.");
