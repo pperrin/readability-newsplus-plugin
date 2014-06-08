@@ -76,7 +76,7 @@ public class ReadabilityClient extends ReaderExtension {
 	private ArrayList<ITag> tagList; 	
 	
 	public final int LOGIN_OK=200;
-	private static final String starredTag= "666"; // "Tag/starred";
+	private static final String starredTag= "Tag/starred";
 	
 	protected DefaultHttpClient client;
 
@@ -173,34 +173,46 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 	}
 	
 	@Override
-	public void handleItemList(IItemListHandler itemHandler, long arg1)throws IOException, ReaderException 
+	public void handleItemList(IItemListHandler itemHandler, long arg1) throws IOException, ReaderException 
+	{	String content="";
+		try
+		{
+		trace("Item Handler: "+itemHandler.stream().toString());
+		if (itemHandler.stream().equals(STATE_READING_LIST))
+			{	HttpResponse response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks");				
+				content = getContent(getInputStreamFromResponse(response));
+				if (response.getStatusLine().getStatusCode() != 200)
+				{	android.util.Log.w("idltd", "Readability API failed: " + content);
+					 throw new Exception("wtf");
+				}	}
+		}
+		catch (Exception e)
+		{}
+		
+		parseItems(itemHandler, content);
+	}
+	private void parseItems(IItemListHandler itemHandler,String content)throws IOException, ReaderException
 	{	try
-		{	if(itemHandler.stream().equals(STATE_READING_LIST))
-			{	List<Integer>articleIds=Prefs.getAllItemIDs(getMContext());
-				if(itemHandler.startTime()==0) Prefs.removeALLItemIDs(getMContext());
-				lastItemIDList=new ArrayList<String>();
-				HttpResponse response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks");				
-				String content=getContent(getInputStreamFromResponse(response));
-				if (response.getStatusLine().getStatusCode()!=200)
-				{	android.util.Log.w("idltd","Readability API failed: "+content);
-					throw new Exception("wtf");
+		{	List<Integer>articleIds=Prefs.getAllItemIDs(getMContext());
+			if(itemHandler.startTime()==0) Prefs.removeALLItemIDs(getMContext());
+			lastItemIDList=new ArrayList<String>();
+			
+			JSONObject obj=new JSONObject(content);
+			JSONArray array=obj.getJSONArray("bookmarks");
+			ArrayList<IItem>itemlist=new ArrayList<IItem>();
+			int entryLength=0;
+			for(int i=0;i<array.length();i++)
+			{	JSONObject bookmark=array.getJSONObject(i);
+				String articleHref=bookmark.getString("article_href");
+				JSONArray tags=bookmark.getJSONArray("tags");
+				// already got this one?
+				if(articleIds.indexOf(Integer.valueOf(bookmark.getString("id")))>-1)
+				{	lastItemIDList.add(bookmark.getString("id"));
+					continue;
 				}
-				JSONObject obj=new JSONObject(content);
-				JSONArray array=obj.getJSONArray("bookmarks");
-				ArrayList<IItem>itemlist=new ArrayList<IItem>();
-				int entryLength=0;
-				for(int i=0;i<array.length();i++)
-				{	JSONObject bookmark=array.getJSONObject(i);
-					String articleHref=bookmark.getString("article_href");
-					JSONArray tags=bookmark.getJSONArray("tags");
-					// already got this one?
-					if(articleIds.indexOf(Integer.valueOf(bookmark.getString("id")))>-1)
-					{	lastItemIDList.add(bookmark.getString("id"));
-						continue;
-					}
-					Prefs.addItemID(getMContext(), bookmark.getInt("id"));
-					response=doGetInputStream("https://www.readability.com"+articleHref);
-					content=getContent(getInputStreamFromResponse(response));
+				Prefs.addItemID(getMContext(), bookmark.getInt("id"));
+				HttpResponse response=doGetInputStream("https://www.readability.com"+articleHref);
+				content=getContent(getInputStreamFromResponse(response));
 					JSONObject article=null;
 					try{article=new JSONObject(content);}catch(Exception e){e.printStackTrace();continue;}
 					IItem item=new IItem();
@@ -218,7 +230,8 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 						item.subUid=t.getString("id");
 					}*/
 					for (int j=0; j<tags.length(); j++)
-					{	item.addTag(tags.getJSONObject(j).getString("id"));
+					{
+						item.addTag(tags.getJSONObject(j).getString("id"));
 						android.util.Log.v("idltd","adding to item:"+Integer.toString(i)+" tag: "+tags.getJSONObject(j).getString("text"));
 					}
 					SimpleDateFormat format=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -232,20 +245,19 @@ android.util.Log.v("idltd","editing "+ Integer.toString(action) +"/"+Integer.toS
 						entryLength=0;
 					}
 					item.starred = bookmark.getBoolean("favorite");
-					if (item.starred) item.addTag(ReadabilityClient.starredTag); 
-					if (item.starred) item.addTag("Favourites"); 
+					if (item.starred) item.addTag(ReadabilityClient.starredTag);
+					// if (item.starred) item.addTag("Favourites");
 					item.read = bookmark.getBoolean("archive");
 					trace("item: "+item.uid.toString()+" read: "+ (item.read ? "true":"false"));
+					trace("item: "+item.uid.toString()+" starred: "+ (item.starred ? "true":"false"));
 					entryLength=entryLength+item.getLength();
 					itemlist.add(item);
 					lastItemIDList.add(item.uid);
 				}
 				itemHandler.items(itemlist, entryLength);
-		}	}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-	}	}
+		}
+		catch (Exception e) { e.printStackTrace(); }
+	}
 
 	private void trace(String message)
 	{	android.util.Log.v("idltd",message); }
