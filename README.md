@@ -41,4 +41,4 @@ https://www.readability.com
 Versions
 30beta - initial version
 31beta - improved handling of readability login failure
-32beta - deletions
+32beta - improved tag handling, starring and (un)read marking.
