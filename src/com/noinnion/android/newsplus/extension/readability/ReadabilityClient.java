@@ -462,11 +462,12 @@ public class ReadabilityClient extends ReaderExtension {
 		mConsumer.setTokenWithSecret(token, tokenSecret);
 		mConsumer.sign(post);
 	
-		android.util.Log.v("idltd","post requst: "+url);
+		trace("post requst: "+url);
 
 		HttpResponse response  = null;	
 		try { response = getClient().execute(post); }
 		catch (Exception e) { e.printStackTrace(); }
+		trace("posted");
 		return toastCode(response);
 	}
 	public HttpResponse doDeleteInputStream(String url) throws IOException, ReaderException, OAuthMessageSignerException, OAuthExpectationFailedException, OAuthCommunicationException 
