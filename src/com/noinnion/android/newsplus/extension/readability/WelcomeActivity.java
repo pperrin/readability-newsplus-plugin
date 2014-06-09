@@ -70,6 +70,7 @@ public class WelcomeActivity extends SherlockActivity implements OnClickListener
 			case R.id.menu_feedback:
 				Intent intent = new Intent(this, SendLogActivity.class);
 				intent.putExtra(SendLogActivity.EXTRA_SEND_LOG, true);
+				android.util.Log.v("idltd","processing intent "+intent.toString());
 				startActivity(intent);
 				return true;
 		}

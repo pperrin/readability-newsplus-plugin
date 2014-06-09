@@ -66,10 +66,13 @@ public class Prefs extends ExtensionPrefs {
 	}
 	public static String getOAuthToken(Context c)
 	{
+//		Log.v("idltd","c: "+c.toString()+" token const: "+OAUTH_TOKEN);
 		return getString(c, OAUTH_TOKEN);
 	}
 	public static String getOAuthTokenSecret(Context c)
 	{
+	//	Log.v("idltd","secret token const: "+OAUTH_TOKEN_SECRET);
+	//	Log.v("idltd","c: "+c.toString()+" secret token const: "+OAUTH_TOKEN_SECRET);
 		return getString(c, OAUTH_TOKEN_SECRET);
 	}
 	

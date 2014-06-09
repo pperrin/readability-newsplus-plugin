@@ -103,11 +103,11 @@ public class LoginActivity extends FragmentActivity implements OnClickListener {
 			String password = params[1];
 
 			final Context c = getApplicationContext();
-			Prefs.setUserPasswd(c, user, null);
 			ReadabilityClient client=new ReadabilityClient(c);
+			Prefs.setUserPasswd(c, user, null);
 			try 
 			{
-				if(client.login(user,password))
+				if(client.login(user,password,c))
 				{
 					Prefs.setUserPasswd(c, user, password);
 					return true;
