@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	package="com.noinnion.android.newsplus.extension.readability"
 	android:installLocation="auto" android:versionCode="32"
-	android:versionName="0.0.32beta">
+	android:versionName="0.0.33beta">
 
 	<uses-sdk android:minSdkVersion="8" android:targetSdkVersion="16" />
 

@@ -50,6 +50,17 @@ public class Prefs extends ExtensionPrefs {
 			list.add(new Integer(sp));
 		return list;
 	}
+	public static java.util.List<String> getAllItemIDsStr(Context c)
+	{
+		String str=getString(c, ALL_IDS);
+		if(str==null||str.equals(""))
+			return new ArrayList<String>();
+		String[]s=str.split(";");
+		ArrayList<String> list=new ArrayList<String>(s.length);
+		for(String sp:s)
+			list.add(sp);
+		return list;
+	}
 	
 	public static boolean isLoggedIn(Context c) 
 	{
