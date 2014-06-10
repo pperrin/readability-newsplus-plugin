@@ -73,6 +73,7 @@ import com.noinnion.android.reader.api.provider.ITag;
 import android.nfc.*;
 
 public class ReadabilityClient extends ReaderExtension {
+	private final String STATE_TRASH = "user/-/state/trash";
 	private Context mContext;
 	private List<String> lastItemIDList;
 	private ArrayList<ITag> tagList; 	
@@ -118,7 +119,18 @@ public class ReadabilityClient extends ReaderExtension {
 		if(action==ReaderExtension.ACTION_ITEM_TAG_ADD_LABEL)
 		{	for(String tag:tags)
 			{	trace("editing tag ="+tag);
-				if(tag.equals(starredTagID))
+				if(tag.equals(STATE_TRASH))
+				{	for(String itemBookmarkId:itemUids)
+					{	trace("deleting bookmark ="+itemBookmarkId);
+						try
+						{
+						doDeleteInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemBookmarkId);
+						}
+						catch (Exception e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+				}	}	}
+				else if(tag.equals(starredTagID))
 				{	BasicNameValuePair nvp=new BasicNameValuePair("favorite","1");
 					ArrayList<NameValuePair> nvps =new ArrayList<NameValuePair>();
 					nvps.add(nvp);			
@@ -129,7 +141,7 @@ public class ReadabilityClient extends ReaderExtension {
 						} catch (Exception e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
-				}	}	}
+						}	}	}
 				else { // user defined tag - note, added as comma separated string
 					for(String itemBookmarkId:itemUids)
 					{ trace("editing tag bookmark ="+itemBookmarkId);
@@ -160,7 +172,7 @@ public class ReadabilityClient extends ReaderExtension {
 				else
 				{	for(String itemBookmarkId:itemUids)
 					{	try
-						{String txt="eof"; for (ITag ttag : tagList) if (ttag.uid.equals(tag)) txt = ttag.label;	
+						{//String txt="eof"; for (ITag ttag : tagList) if (ttag.uid.equals(tag)) txt = ttag.label;	
 							doDeleteInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemBookmarkId+"/tags/"+tag);
 						} catch (Exception e)
 						{	// TODO Auto-generated catch block
@@ -188,7 +200,8 @@ public class ReadabilityClient extends ReaderExtension {
 
 	@Override
 	public boolean editSubscription(String uid, String title, String url, String[] tags, int action) throws IOException, ReaderException 
-	{	switch (action) {
+	{	trace("Edit Susc: "+action);
+		switch (action) {
         case ReaderExtension.ACTION_SUBSCRIPTION_EDIT: break;
         case ReaderExtension.ACTION_SUBSCRIPTION_NEW_LABEL: break;
         case ReaderExtension.ACTION_SUBSCRIPTION_ADD_LABEL: break;
@@ -201,7 +214,8 @@ public class ReadabilityClient extends ReaderExtension {
 	
 	@Override
 	public void handleItemIdList(IItemIdListHandler itemHandler, long arg1)throws IOException, ReaderException
-	{	List<String>idList=new ArrayList<String>();
+	{	trace("handling item id list");
+		List<String>idList=new ArrayList<String>();
 		for(String id:lastItemIDList) {	idList.add(id+""); }
 		try
 		{	itemHandler.items(idList); }
@@ -218,10 +232,10 @@ public class ReadabilityClient extends ReaderExtension {
 			if (itemHandler.stream().equals(STATE_READING_LIST)) response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks?archive=0"); 				
 			if (itemHandler.stream().equals(STATE_STARRED)) response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks?favorite=1");
 			// if (itemHandler.stream().equals(STATE_READ)) response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks?archive=1");
-		 }
+			if (response!= null && toastCode(response)!=null) parseItems(itemHandler, getContent(getInputStreamFromResponse(response)));	 }
 		catch (Exception e)
 		{ e.printStackTrace(); }
-		if (toastCode(response)!=null) parseItems(itemHandler, getContent(getInputStreamFromResponse(response)));
+		trace("handled");
 	}
 	
 	private void parseItems(IItemListHandler itemHandler,String content)throws IOException, ReaderException
@@ -331,18 +345,19 @@ public class ReadabilityClient extends ReaderExtension {
 		if (stream==null)
 		{	//mark em all
 			List<String> articleIds=Prefs.getAllItemIDsStr(getMContext());
+			trace("All: "+Integer.toString(articleIds.size()));
 			String[] idarray = new String[articleIds.size()];
 			for(int i = 0; i < articleIds.size(); i++) idarray[i] = articleIds.get(i);
 			return markAsRead(idarray,null);
 		}
-		else if (stream==starredTagID)
+		else if (stream.equals(starredTagID))
 		{	HttpResponse response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks?favorite=1&archive=0");
 			if (toastCode(response)!=null)
 			{	String content = getContent(getInputStreamFromResponse(response));
 				JSONObject obj=new JSONObject(content);
 				JSONArray array=obj.getJSONArray("bookmarks");
-				ArrayList<IItem> itemlist=new ArrayList<IItem>();
-				String[] idarray = new String[itemlist.size()];
+				String[] idarray = new String[array.length()];
+				trace("Starred: "+Integer.toString(array.length()));
 				for(int i=0;i<array.length();i++)
 				{	JSONObject bookmark=array.getJSONObject(i);
 					idarray[i] = bookmark.getString("id");
@@ -351,13 +366,13 @@ public class ReadabilityClient extends ReaderExtension {
 			}
 		}
 		else // Its a tag
-		{	HttpResponse response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks?archive=0&tag="+stream);
+		{	HttpResponse response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks?archive=0&tags="+title);
 			if (toastCode(response)!=null)
 			{	String content = getContent(getInputStreamFromResponse(response));
 				JSONObject obj=new JSONObject(content);
 				JSONArray array=obj.getJSONArray("bookmarks");
-				ArrayList<IItem> itemlist=new ArrayList<IItem>();
-				String[] idarray = new String[itemlist.size()];
+				String[] idarray = new String[array.length()];
+				trace("Tag: "+Integer.toString(array.length()));
 				for(int i=0;i<array.length();i++)
 				{	JSONObject bookmark=array.getJSONObject(i);
 					idarray[i] = bookmark.getString("id");
@@ -485,6 +500,7 @@ public class ReadabilityClient extends ReaderExtension {
     
     public HttpResponse doGetInputStream(String url) throws ClientProtocolException, IOException, ReaderException, OAuthMessageSignerException, OAuthExpectationFailedException, OAuthCommunicationException
     {
+		trace ("get input stream: "+url);
 		HttpGet post = new HttpGet(url);
 		post.addHeader("Content-Type", "application/x-www-form-urlencoded");		
 		String tokenSecret=Prefs.getOAuthTokenSecret(getMContext());
@@ -545,7 +561,7 @@ public class ReadabilityClient extends ReaderExtension {
 
 	private HttpResponse toastCode( HttpResponse response)
 	{	Integer responseCode = response.getStatusLine().getStatusCode();
-		if (responseCode==200 || responseCode==202) return response;
+		if (responseCode==200 || responseCode==202 || responseCode==204 ) return response;
 		trace("toast: "+ responseCode.toString());
 		if (responseCode == 401) AndroidUtils.showToast(getMContext(), "Authorization Required: Authentication failed or was not provided.");
 		else if (responseCode == 404) AndroidUtils.showToast(getMContext(), "Not Found: The resource that you requested does not exist.");
@@ -553,7 +569,7 @@ public class ReadabilityClient extends ReaderExtension {
 		else if (responseCode == 400) AndroidUtils.showToast(getMContext(), "Bad Request: The server could not understand your request.");
 		else if (responseCode == 409) AndroidUtils.showToast(getMContext(), "Conflict: The resource that you are trying to create already exists.");
 		else if (responseCode == 403) AndroidUtils.showToast(getMContext(), "Forbidden: You are not allowed to perform the requested action.");
-		else AndroidUtils.showToast(getMContext(), "HTTP Error: "+response.getStatusLine().getReasonPhrase()+" ("+response.getStatusLine().getReasonPhrase()+")");
+		else AndroidUtils.showToast(getMContext(), "HTTP Error: "+response.getStatusLine().getReasonPhrase()+" ("+responseCode+")");
 		return null;
 	}
 	
