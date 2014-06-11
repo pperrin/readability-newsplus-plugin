@@ -73,13 +73,14 @@ import com.noinnion.android.reader.api.provider.ITag;
 import android.nfc.*;
 
 public class ReadabilityClient extends ReaderExtension {
-	private final String STATE_TRASH = "user/-/state/trash";
+	private Integer int1=0;
 	private Context mContext;
 	private List<String> lastItemIDList;
 	private ArrayList<ITag> tagList; 	
 	
 	public final int LOGIN_OK=200;
 	private static final String starredTagID= "Tag/starred";
+	private static final String archivedTagID="Tag/archived";
 	
 	protected DefaultHttpClient client;
 
@@ -229,10 +230,13 @@ public class ReadabilityClient extends ReaderExtension {
 		HttpResponse response=null;
 		try
 		{	trace("Item Handler: "+itemHandler.stream().toString());
-			if (itemHandler.stream().equals(STATE_READING_LIST)) response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks?archive=0"); 				
-			if (itemHandler.stream().equals(STATE_STARRED)) response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks?favorite=1");
+			if (itemHandler.stream().equals(STATE_READING_LIST)) response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks?archive=0"); 						
 			// if (itemHandler.stream().equals(STATE_READ)) response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks?archive=1");
-			if (response!= null && toastCode(response)!=null) parseItems(itemHandler, getContent(getInputStreamFromResponse(response)));	 }
+			if (itemHandler.stream().equals(STATE_STARRED) && int1==0) response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks?archive=1");
+			if (itemHandler.stream().equals(STATE_STARRED) && int1==1) response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks?favorite=1");
+			if (response!= null && toastCode(response)!= null) parseItems(itemHandler, getContent(getInputStreamFromResponse(response)));
+			if (itemHandler.stream().equals(STATE_STARRED)) int1=1-int1;
+			}
 		catch (Exception e)
 		{ e.printStackTrace(); }
 		trace("handled");
@@ -287,8 +291,8 @@ public class ReadabilityClient extends ReaderExtension {
 					}
 					item.starred = bookmark.getBoolean("favorite");
 					if (item.starred) item.addTag(ReadabilityClient.starredTagID);
-				   // if (item.starred) item.addTag("Favourites");
 					item.read = bookmark.getBoolean("archive");
+					if (item.read) item.addTag(ReadabilityClient.archivedTagID);
 					trace("item: "+item.uid.toString()+" read: "+ (item.read ? "true":"false"));
 					trace("item: "+item.uid.toString()+" starred: "+ (item.starred ? "true":"false"));
 					entryLength=entryLength+item.getLength();
@@ -313,6 +317,12 @@ public class ReadabilityClient extends ReaderExtension {
 			tag.label="Favorites";
 			tag.uid=ReadabilityClient.starredTagID;
 			tag.type=ITag.TYPE_TAG_STARRED;
+			tagList.add(tag);
+			
+			tag = new ITag();
+			tag.label="Archived";
+			tag.uid=ReadabilityClient.archivedTagID;
+			tag.type=ITag.TYPE_TAG_LABEL;
 			tagList.add(tag);
 			
 			HttpResponse response=doGetInputStream("https://www.readability.com/api/rest/v1/tags");
@@ -340,7 +350,7 @@ public class ReadabilityClient extends ReaderExtension {
 
 	@Override
 	public boolean markAllAsRead(String stream, String title, String[] excludedStreams,long syncTime) throws IOException, ReaderException
-	{	trace("mark all read: " + ((stream == null) ? "null" : stream) );
+	{	trace("mark all read: " + ((stream == null) ? "null" : stream)+ ":" + ((title==null) ? "null" : title ));
 		try{
 		if (stream==null)
 		{	//mark em all

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	package="com.noinnion.android.newsplus.extension.readability"
-	android:installLocation="auto" android:versionCode="32"
-	android:versionName="0.0.33beta">
+	android:installLocation="auto" android:versionCode="34"
+	android:versionName="0.0.34beta">
 
 	<uses-sdk android:minSdkVersion="8" android:targetSdkVersion="16" />
 
@@ -18,7 +18,7 @@
 	
 	<application android:label="@string/app_name" android:icon="@drawable/icon"
 		android:allowBackup="true" android:theme="@style/Theme.Sherlock.Light"
-		android:debuggable="false">
+		android:debuggable="true">
 
 		<activity android:name="com.noinnion.android.newsplus.extension.readability.WelcomeActivity"
 			android:configChanges="keyboardHidden" android:windowSoftInputMode="stateHidden|adjustPan">
