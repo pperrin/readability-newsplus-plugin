@@ -39,8 +39,11 @@ public class WelcomeActivity extends SherlockActivity implements OnClickListener
 					finish();
 				}
 				break;
-		}
-	}
+			case R.id.changelog:
+            case R.id.rate:
+                Utils.startMarketApp(this, getPackageName());
+                break;
+		}	}
 
 	private String	mAppPackage	= null;
 
@@ -56,6 +59,10 @@ public class WelcomeActivity extends SherlockActivity implements OnClickListener
 		button.setText(installed ? R.string.txt_start_app : R.string.txt_download_app);
 		button.setEnabled(true);
 		button.setOnClickListener(this);
+		
+		findViewById(R.id.changelog).setOnClickListener(this);
+        findViewById(R.id.rate).setOnClickListener(this);
+	
 	}
 
 	@Override

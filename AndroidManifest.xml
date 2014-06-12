@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	package="com.noinnion.android.newsplus.extension.readability"
-	android:installLocation="auto" android:versionCode="32"
-	android:versionName="0.0.33beta">
+	android:installLocation="auto" android:versionCode="34"
+	android:versionName="0.0.34beta">
 
 	<uses-sdk android:minSdkVersion="8" android:targetSdkVersion="16" />
 
@@ -42,7 +42,16 @@
 
 		<activity android:name="com.noinnion.android.newsplus.extension.readability.LoginActivity" android:label="@string/extension_login_title"
 			android:exported="true" android:theme="@style/Theme.Dialog" />
-
+     
+		<activity android:name="com.noinnion.android.newsplus.extension.readability.AddActivity" android:label="Add to Readability+" 
+       	    android:configChanges="keyboardHidden|keyboard|orientation|screenSize" 
+       	    android:windowSoftInputMode="stateHidden|adjustPan" android:theme="@style/Theme.Transparent">
+			<intent-filter>
+				<action android:name="android.intent.action.SEND" />
+				<category android:name="android.intent.category.DEFAULT" />
+				<data android:mimeType="text/plain" />
+			</intent-filter>
+		</activity>
 		<activity android:name="com.noinnion.android.newsplus.extension.readability.SendLogActivity" android:theme="@style/Theme.Dialog" />
 		
 	</application>
