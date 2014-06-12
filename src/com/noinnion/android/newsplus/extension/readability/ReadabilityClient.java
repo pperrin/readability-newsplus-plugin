@@ -132,9 +132,8 @@ public class ReadabilityClient extends ReaderExtension {
 							e.printStackTrace();
 				}	}	}
 				else if(tag.equals(starredTagID))
-				{	BasicNameValuePair nvp=new BasicNameValuePair("favorite","1");
-					ArrayList<NameValuePair> nvps =new ArrayList<NameValuePair>();
-					nvps.add(nvp);			
+				{	ArrayList<NameValuePair> nvps =new ArrayList<NameValuePair>();
+					nvps.add(new BasicNameValuePair("favorite","1"));			
 					for(String itemBookmarkId:itemUids)
 					{	trace("editing tag bookmark ="+itemBookmarkId);
 						try
@@ -235,7 +234,7 @@ public class ReadabilityClient extends ReaderExtension {
 			// if (itemHandler.stream().equals(STATE_READ)) response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks?archive=1");
 			//if (itemHandler.stream().equals(STATE_STARRED) && int1==0) response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks?archive=1");
 			//if (itemHandler.stream().equals(STATE_STARRED) && int1==1) response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks?favorite=1");
-			//if (response!= null && toastCode(response)!= null) parseItems(itemHandler, getContent(getInputStreamFromResponse(response)));
+			if (response!= null && toastCode(response)!= null) parseItems(itemHandler, getContent(getInputStreamFromResponse(response)));
 			//if (itemHandler.stream().equals(STATE_STARRED)) int1=1-int1;
 			}
 		catch (Exception e)

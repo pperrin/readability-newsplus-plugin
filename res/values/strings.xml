@@ -4,7 +4,7 @@
     <string name="app_name">Readability | News+</string>
         
     <!-- Extension -->
-    <string name="extension_name">Readability </string>
+    <string name="extension_name">Readability+</string>
     <string name="extension_description">Readability | News+</string>
     <string name="extension_settings_title">Settings</string>
     <string name="extension_login_title">Login</string>
@@ -26,15 +26,15 @@
     <string name="txt_feedback">Feedback</string>
 	
 	<!-- added -->
-	<string name="added">Added to Readability</string>
-	<string name="not_added">Not Added to Readability</string>
-	<string name="not_added_invalid">Invalid Add to Readability</string>
+	<string name="added">Added to Readability+</string>
+	<string name="not_added">Not Added to Readability+</string>
+	<string name="not_added_invalid">Invalid Add to Readability+</string>
     
     <!-- err -->
     <string name="err_io">Network error</string>
     
     <!-- client -->
-    <string name="client_readability">Readability</string>
+    <string name="client_readability">Readability+</string>
     
     <string name="readability_login_welcome"></string>
     

@@ -13,6 +13,10 @@ package com.noinnion.android.newsplus.extension.readability;
 	import android.util.Patterns;
 	import android.widget.Toast;
 
+import java.util.ArrayList;
+import org.apache.http.NameValuePair;
+import org.apache.http.message.BasicNameValuePair;
+
 	import com.noinnion.android.reader.api.ReaderException;
 // import com.noinnion.android.newsplus.readability.util.Utils;
 
@@ -33,7 +37,7 @@ package com.noinnion.android.newsplus.extension.readability;
 				try {
 					String urlStr = extractURL(intent.getStringExtra(Intent.EXTRA_TEXT));
 					URL u = new URL(urlStr);
-					new AddToPocket().execute(u.toString());
+					new AddToReadability().execute(u.toString());
 				}
 				catch (MalformedURLException e) {
 					Log.e("Pocket+ Debug", "Add to Pocket+ Exception:" + e.getMessage());
@@ -47,18 +51,22 @@ package com.noinnion.android.newsplus.extension.readability;
 		/*
 		 * Asynchronous call to add a URL to Pocket
 		 */
-		private class AddToPocket extends AsyncTask<String, Void, Boolean> {
+		private class AddToReadability extends AsyncTask<String, Void, Boolean> {
 			protected Boolean doInBackground(String... params) {
 				final Context c = getApplicationContext();
 				try {
-					APICall ac = new APICall(APICall.API_URL_ADD, c);
-					ac.addPostParam("url", params[0]);
-					return ac.makeAuthenticated().syncGetResultOk();
+					ReadabilityClient rc = new ReadabilityClient(c);
+					ArrayList<NameValuePair> nvps =new ArrayList<NameValuePair>();
+					nvps.add(new BasicNameValuePair("url",params[0]));
+					nvps.add(new BasicNameValuePair("favorite","0"));	
+					nvps.add(new BasicNameValuePair("archive","0"));
+					rc.doPostInputStream("https://www.readability.com/api/rest/v1/bookmarks/",nvps);
 				}
-				catch (ReaderException e) {
-					Log.e("Pocket+ Debug", "JSONException: " + e.getMessage());
+				catch (Exception e) {
+					Log.e("Readability+ Debug", "JSONException: " + e.getMessage());
 					return false;
 				}
+				return true;
 			}
 
 			protected void onPostExecute(Boolean result) {
