@@ -216,6 +216,7 @@ public class ReadabilityClient extends ReaderExtension {
 	@Override
 	public void handleItemIdList(IItemIdListHandler itemHandler, long arg1)throws IOException, ReaderException
 	{	trace("handling item id list");
+	if (1==1) return;
 		List<String>idList=new ArrayList<String>();
 		for(String id:lastItemIDList) {	idList.add(id+""); }
 		try
@@ -230,12 +231,12 @@ public class ReadabilityClient extends ReaderExtension {
 		HttpResponse response=null;
 		try
 		{	trace("Item Handler: "+itemHandler.stream().toString());
-			if (itemHandler.stream().equals(STATE_READING_LIST)) response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks?archive=0"); 						
+			if (itemHandler.stream().equals(STATE_READING_LIST)) response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks"); // ?archive=0"); 						
 			// if (itemHandler.stream().equals(STATE_READ)) response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks?archive=1");
-			if (itemHandler.stream().equals(STATE_STARRED) && int1==0) response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks?archive=1");
-			if (itemHandler.stream().equals(STATE_STARRED) && int1==1) response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks?favorite=1");
-			if (response!= null && toastCode(response)!= null) parseItems(itemHandler, getContent(getInputStreamFromResponse(response)));
-			if (itemHandler.stream().equals(STATE_STARRED)) int1=1-int1;
+			//if (itemHandler.stream().equals(STATE_STARRED) && int1==0) response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks?archive=1");
+			//if (itemHandler.stream().equals(STATE_STARRED) && int1==1) response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks?favorite=1");
+			//if (response!= null && toastCode(response)!= null) parseItems(itemHandler, getContent(getInputStreamFromResponse(response)));
+			//if (itemHandler.stream().equals(STATE_STARRED)) int1=1-int1;
 			}
 		catch (Exception e)
 		{ e.printStackTrace(); }

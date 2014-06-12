@@ -11,8 +11,10 @@
     
     <string name="msg_login_running">Login…</string>
     <string name="msg_login_fail">Login failure</string>
-    
-    <!-- login -->
+    <!-- welcome -->
+	<string name="txt_changelog">Change log</string>
+  	<string name="txt_rate">Rate this extension</string>
+	<!-- login -->
     <string name="login_welcome">Enter your login data (username and password)</string>
     <string name="login_server">Server (http://google.com)</string>
     <string name="login_id">Username</string>
@@ -22,6 +24,11 @@
     <string name="txt_start_app">Start News+</string>
     <string name="txt_download_app">Download News+</string>
     <string name="txt_feedback">Feedback</string>
+	
+	<!-- added -->
+	<string name="added">Added to Readability</string>
+	<string name="not_added">Not Added to Readability</string>
+	<string name="not_added_invalid">Invalid Add to Readability</string>
     
     <!-- err -->
     <string name="err_io">Network error</string>
