@@ -71,6 +71,8 @@ import com.noinnion.android.reader.api.provider.IItem;
 import com.noinnion.android.reader.api.provider.ISubscription;
 import com.noinnion.android.reader.api.provider.ITag;
 import android.nfc.*;
+import java.text.*;
+import java.net.*;
 
 public class ReadabilityClient extends ReaderExtension {
 	private Integer int1=0;
@@ -109,9 +111,17 @@ public class ReadabilityClient extends ReaderExtension {
 	}
 
 	@Override
-	public boolean disableTag(String arg0, String arg1) throws IOException,ReaderException 
-	{
-		return false; 	
+	public boolean disableTag(String uid, String lbl) throws IOException,ReaderException 
+	{	trace("disable tag");
+		try
+		{
+			doDeleteInputStream("https://www.readability.com/api/rest/v1/tags/" + uid);
+		}
+		catch (Exception e)
+		{	e.printStackTrace();
+			return false; }
+		
+		return true; 
 	}
 
 	@Override
@@ -137,7 +147,9 @@ public class ReadabilityClient extends ReaderExtension {
 					for(String itemBookmarkId:itemUids)
 					{	trace("editing tag bookmark ="+itemBookmarkId);
 						try
-						{	doPostInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemBookmarkId, nvps);
+						{	IItem item = getItem(itemBookmarkId);
+							nvps.add(new BasicNameValuePair("archived",item.read ? "1":"0"));			
+							doPostInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemBookmarkId, nvps);
 						} catch (Exception e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
@@ -164,7 +176,9 @@ public class ReadabilityClient extends ReaderExtension {
 					nvps.add(nvp);			
 					for(String itemBookmarkId:itemUids)
 					{	try
-						{	doPostInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemBookmarkId, nvps);
+						{	IItem item=getItem(itemBookmarkId);
+						nvps.add(new BasicNameValuePair("read", item.read ? "1":"2"));
+						doPostInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemBookmarkId, nvps);
 						} catch (Exception e)
 						{	// TODO Auto-generated catch block
 							e.printStackTrace();
@@ -197,10 +211,22 @@ public class ReadabilityClient extends ReaderExtension {
 		else return false;
 		return true;
 	}
-
+	private IItem getItem(String itemBookmarkId)
+	{	trace("getting item: "+itemBookmarkId);
+		IItem item = null;
+		try
+		{	HttpResponse response = doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemBookmarkId);
+			if (toastCode(response) == null) {}							
+			String str = getContent(getInputStreamFromResponse(response));
+			item = parseItem(new JSONObject (str),"");
+			
+		} catch (Exception e) {
+			e.printStackTrace(); 
+		}
+	return item;}
 	@Override
 	public boolean editSubscription(String uid, String title, String url, String[] tags, int action) throws IOException, ReaderException 
-	{	trace("Edit Susc: "+action);
+	{	trace("Edit Subsc: "+action);
 		switch (action) {
         case ReaderExtension.ACTION_SUBSCRIPTION_EDIT: break;
         case ReaderExtension.ACTION_SUBSCRIPTION_NEW_LABEL: break;
@@ -214,8 +240,13 @@ public class ReadabilityClient extends ReaderExtension {
 	
 	@Override
 	public void handleItemIdList(IItemIdListHandler itemHandler, long arg1)throws IOException, ReaderException
-	{	trace("handling item id list");
-	if (1==1) return;
+	{	try
+		{
+			trace("handling item id list: " + itemHandler.stream());
+		}
+		catch (RemoteException e)
+		{e.printStackTrace(); }
+		if (1 == 1) return;
 		List<String>idList=new ArrayList<String>();
 		for(String id:lastItemIDList) {	idList.add(id+""); }
 		try
@@ -254,54 +285,72 @@ public class ReadabilityClient extends ReaderExtension {
 			int entryLength=0;
 			for(int i=0;i<array.length();i++)
 			{	JSONObject bookmark=array.getJSONObject(i);
-				String articleHref=bookmark.getString("article_href");
-				JSONArray tags=bookmark.getJSONArray("tags");
 				// already got this one?
-				if(articleIds.indexOf(Integer.valueOf(bookmark.getString("id")))>-1)
+				if (articleIds.indexOf(Integer.valueOf(bookmark.getString("id"))) > -1)
 				{	lastItemIDList.add(bookmark.getString("id"));
-					continue;
+					//continue;
 				}
-				Prefs.addItemID(getMContext(), bookmark.getInt("id"));
-				HttpResponse response=doGetInputStream("https://www.readability.com"+articleHref);
-				content=getContent(getInputStreamFromResponse(response));
-					JSONObject article=null;
-					try{article=new JSONObject(content);}catch(Exception e){e.printStackTrace();continue;}
-					IItem item=new IItem();
-					if(!article.isNull("author")) item.author=article.getString("author");
-					if(!article.isNull("content")) item.content=article.getString("content");
-					else item.content="";
-					if(!article.isNull("url")) item.link=article.getString("url");
-					if(!article.isNull("lead_image_url")) item.image=article.getString("lead_image_url");
-					if(!article.isNull("title")) item.title=article.getString("title");
-					if(!article.isNull("id")) item.uid=bookmark.getString("id");
-					
-					for (int j=0; j<tags.length(); j++)
-					{	item.addTag(tags.getJSONObject(j).getString("id"));
-						trace("adding to item:"+Integer.toString(i)+" tag: "+tags.getJSONObject(j).getString("text"));
-					}
-					SimpleDateFormat format=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-					if(!article.isNull("date_published")) item.publishedTime=format.parse(article.getString("date_published")).getTime();
-					if(!bookmark.isNull("date_added")) item.updatedTime=format.parse(bookmark.getString("date_added")).getTime()/1000;
-					else item.updatedTime=item.publishedTime/1000;
-					if((entryLength+item.getLength())>MAX_TRANSACTION_LENGTH)
-					{	try {	itemHandler.items(itemlist, item.getLength()); }
-						catch(Exception e) { Log.e("Readability.handleItem",e.toString()+" :  TransactionLength: "+entryLength); }
-						itemlist.clear();
-						entryLength=0;
-					}
-					item.starred = bookmark.getBoolean("favorite");
-					if (item.starred) item.addTag(ReadabilityClient.starredTagID);
-					item.read = bookmark.getBoolean("archive");
-					if (item.read) item.addTag(ReadabilityClient.archivedTagID);
-					trace("item: "+item.uid.toString()+" read: "+ (item.read ? "true":"false"));
-					trace("item: "+item.uid.toString()+" starred: "+ (item.starred ? "true":"false"));
+				IItem item = parseItem(bookmark, content);
 					entryLength=entryLength+item.getLength();
 					itemlist.add(item);
 					lastItemIDList.add(item.uid);
-				}
+				if ((entryLength + item.getLength()) > MAX_TRANSACTION_LENGTH)
+				{	try
+					{	itemHandler.items(itemlist, item.getLength()); }
+					catch (Exception e)
+					{ Log.e("Readability.handleItem", e.toString() + " :  TransactionLength: " + entryLength); }
+					itemlist.clear();
+					entryLength = 0;
+				}}
 				itemHandler.items(itemlist, entryLength);
 		}
 		catch (Exception e) { e.printStackTrace(); }
+	}
+
+	private IItem parseItem(JSONObject bookmark, String content) throws OAuthExpectationFailedException, OAuthMessageSignerException, NumberFormatException, ReaderException, IOException, JSONException, IllegalStateException, OAuthCommunicationException
+	{
+		String articleHref=bookmark.getString("article_href");
+		JSONArray tags=bookmark.getJSONArray("tags");
+		
+		Prefs.addItemID(getMContext(), bookmark.getInt("id"));
+		HttpResponse response=doGetInputStream("https://www.readability.com" + articleHref);
+		content = getContent(getInputStreamFromResponse(response));
+		JSONObject article=null;
+		try
+		{article = new JSONObject(content);}
+		catch (Exception e)
+		{e.printStackTrace();}
+		IItem item=new IItem();
+		if (!article.isNull("author")) item.author = article.getString("author");
+		if (!article.isNull("content")) item.content = article.getString("content");
+		else item.content = "";
+		if (!article.isNull("url")) item.link = article.getString("url");
+		if (!article.isNull("lead_image_url")) item.image = article.getString("lead_image_url");
+		if (!article.isNull("title")) item.title = article.getString("title");
+		if (!article.isNull("id")) item.uid = bookmark.getString("id");
+
+		for (int j=0; j < tags.length(); j++)
+		{	item.addTag(tags.getJSONObject(j).getString("id"));
+			trace("adding to item: "+item.uid+" tag: " + tags.getJSONObject(j).getString("text"));
+		}
+		SimpleDateFormat format=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		
+		try
+		{if (!article.isNull("date_published")) item.publishedTime = format.parse(article.getString("date_published")).getTime();
+			if (!bookmark.isNull("date_added")) item.updatedTime = format.parse(bookmark.getString("date_added")).getTime() / 1000;
+			else item.updatedTime = item.publishedTime / 1000;
+		}
+		catch (Exception e)
+		{	e.printStackTrace();
+		}
+
+		item.starred = bookmark.getBoolean("favorite");
+		if (item.starred) item.addTag(ReadabilityClient.starredTagID);
+		item.read = bookmark.getBoolean("archive");
+		if (item.read) item.addTag(ReadabilityClient.archivedTagID);
+		trace("item: " + item.uid.toString() + " read: " + (item.read ? "true": "false"));
+		trace("item: " + item.uid.toString() + " starred: " + (item.starred ? "true": "false"));
+		return item;
 	}
 
 	private void trace(String message)
@@ -404,7 +453,9 @@ public class ReadabilityClient extends ReaderExtension {
 		for (String itemUid: itemUids) {
 			try {
 				trace("marking read");
+				IItem item = getItem(itemUid);			
 				ArrayList<NameValuePair> nvps = new ArrayList<NameValuePair>();
+				nvps.add(new BasicNameValuePair("favorite",item.starred? "1":"0"));
 				nvps.add(new BasicNameValuePair("archive","1"));			
 				doPostInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemUid, nvps);
 				trace("marked read");
@@ -423,7 +474,9 @@ public class ReadabilityClient extends ReaderExtension {
 		for (String itemUid: itemUids) {
 			try {
 				trace("marking unread");			
+				IItem item = getItem(itemUid);
 				ArrayList<NameValuePair> nvps = new ArrayList<NameValuePair>();
+				nvps.add(new BasicNameValuePair("favorite",item.starred? "1":"0"));
 				nvps.add(new BasicNameValuePair("archive","0"));
 				doPostInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+itemUid, nvps);
 				trace("marked unread");
@@ -435,11 +488,33 @@ public class ReadabilityClient extends ReaderExtension {
 		}
 	    return true;
 	}
+	
 	@Override
-	public boolean renameTag(String arg0, String arg1, String arg2)throws IOException, ReaderException 
-	{
-		//nicht implementiert in FeedBin
-		return false;
+	public boolean renameTag(String uid, String oldt, String newt)throws IOException, ReaderException 
+	{	trace("rename tag");
+		if (uid==starredTagID) return false;
+		HttpResponse response= null;
+		try		
+		{	response=doGetInputStream("https://www.readability.com/api/rest/v1/bookmarks?tags=" + URLEncoder.encode(oldt));	
+			if (toastCode(response) != null)
+			{	String content = getContent(getInputStreamFromResponse(response));
+				JSONObject obj=new JSONObject(content);
+				JSONArray array=obj.getJSONArray("bookmarks");
+				trace("Starred: "+Integer.toString(array.length()));
+				ArrayList<NameValuePair> nvps = new ArrayList<NameValuePair>();
+				nvps.add(new BasicNameValuePair("tags",newt));
+				for(int i=0;i<array.length();i++)
+				{	JSONObject bookmark=array.getJSONObject(i);
+					doPostInputStream("https://www.readability.com/api/rest/v1/bookmarks/"+bookmark.getString("id")+"/tags", nvps);			
+				}
+				disableTag(uid,oldt);
+			}
+			return true;
+		}
+		catch (Exception e)
+		{	e.printStackTrace();
+			return false;
+		}		
 	}
 	
     private void handleError(String error) throws ReaderException {
@@ -632,6 +707,7 @@ try {
 			response = client.execute(request);
 			trace("executed "+response.getStatusLine());
 			if (response.getStatusLine().getStatusCode()==401) return false;
+			if (toastCode(response)==null) return false;
 			data = response.getEntity().getContent();
 			trace("data received");
 			
